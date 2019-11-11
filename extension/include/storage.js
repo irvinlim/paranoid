@@ -5,28 +5,34 @@
  */
 
 class ParanoidStorage {
-  static async getOrigin(origin) {
-    return await this.get(`ORIGIN:${origin}`);
+  static servicesHash = 'SVC';
+
+  static async getService(origin) {
+    return await this.get(`${ParanoidStorage.servicesHash}:${origin}`);
   }
 
-  static async createOrigin(origin) {
-    const data = { origin };
-    await this.set(`ORIGIN:${origin}`, data);
-    return data;
+  static async setService(origin, service) {
+    return await this.set(`${ParanoidStorage.servicesHash}:${origin}`, service);
   }
 
-  static async setOriginKey(origin, key) {
-    let obj = await this.get(`ORIGIN:${origin}`);
-    if (!obj) obj = { origin };
-    obj.key = key;
-    await this.set(`ORIGIN:${origin}`, obj);
+  static async createService(origin) {
+    const service = { origin };
+    this.setService(origin, service);
+    return service;
   }
 
-  static async setOriginUID(origin, uid) {
-    let obj = await this.get(`ORIGIN:${origin}`);
-    if (!obj) obj = { origin };
-    origin.uid = uid;
-    await this.set(`ORIGIN:${origin}`, obj);
+  static async setServiceKey(origin, key) {
+    let service = await this.getService(origin);
+    if (!service) service = { origin };
+    service.key = key;
+    await this.setService(origin, service);
+  }
+
+  static async setServiceUID(origin, uid) {
+    let service = await this.getService(origin);
+    if (!service) service = { origin };
+    service.uid = uid;
+    await this.setService(origin, service);
   }
 
   static async get(key) {

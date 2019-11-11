@@ -13,31 +13,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     throw new Exception('Cannot parse params.');
   }
 
-  // Fetch the origin data.
+  // Fetch the service data based on the origin.
   const origin = params.get('origin');
-  let originData = await ParanoidStorage.getOrigin(origin);
-  if (!originData) {
-    originData = await ParanoidStorage.createOrigin(origin);
+  let service = await ParanoidStorage.getService(origin);
+  if (!service) {
+    service = await ParanoidStorage.createService(origin);
   }
 
-  // Generate a new RSA key for the origin if it does not exist.
+  // Generate a new RSA key for the service if it does not exist.
   let key;
   const rsa = new JSEncrypt();
-  if (!originData.key) {
+  if (!service.key) {
     key = rsa.getKey();
-    console.log('generated new public key:', key.getPrivateBaseKeyB64());
-    await ParanoidStorage.setOriginKey(origin, key.getPrivateBaseKeyB64());
+    console.log('generated new public key:', key.getPublicBaseKeyB64());
+    await ParanoidStorage.setServiceKey(origin, key.getPrivateBaseKeyB64());
   } else {
-    rsa.setPrivateKey(originData.key);
+    rsa.setPrivateKey(service.key);
     key = rsa.getKey();
   }
 
-  // Check if an existing UID exists for this origin.
-  if (!originData.uid) {
+  // Check if an existing UID exists for this service.
+  if (!service.uid) {
     document.querySelector('.register-text').removeAttribute('style');
   } else {
     document.querySelector('.login-text').removeAttribute('style');
-    document.querySelector('.uid').innerHTML = originData.uid;
+    document.querySelector('.uid').innerHTML = service.uid;
   }
 
   // Replace template tags with data from query string.
@@ -53,12 +53,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Bind values to the form.
   const form = document.querySelector('form');
   form.querySelector('input[name=state]').value = params.get('state');
-  if (!originData.uid) {
+  if (!service.uid) {
     form.setAttribute('action', new URL(params.get('register_callback'), origin));
     form.querySelector('input[name=pubkey]').value = key.getPublicBaseKeyB64();
   } else {
     form.setAttribute('action', new URL(params.get('login_callback'), origin));
-    form.querySelector('input[name=uid]').value = originData.uid;
+    form.querySelector('input[name=uid]').value = service.uid;
   }
 
   // Add button event handlers.
