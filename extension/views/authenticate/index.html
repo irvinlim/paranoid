@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>Login with Paranoid</title>
+        <link rel="stylesheet" href="auth.css" />
+    </head>
+    <body>
+        <header>
+            <h1>Login with Paranoid</h1>
+        </header>
+        <main>
+            <p>
+                The service "<span class="app_name"></span>" at <code class="origin"></code> wishes
+                to log you in.
+            </p>
+
+            <p class="login-text" style="display: none;">
+                You will be logging in with UID <code class="uid"></code>.
+            </p>
+            <p class="register-text" style="display: none;">
+                You will be registering as a new user.
+            </p>
+            <p>Your public key for this service is:</p>
+            <pre class="pubkey-full"></pre>
+
+            <p>
+                <strong>
+                    This will not reveal any data to
+                    <span class="app_name"></span> without your explicit approval.
+                </strong>
+            </p>
+            <p>Do you wish to continue?</p>
+
+            <form class="form" method="POST">
+                <input type="hidden" name="state" />
+                <input type="hidden" name="pubkey" />
+                <input type="hidden" name="uid" />
+                <button type="submit" class="btn approve">Yes, approve</button>
+                <button class="btn deny">No, deny</button>
+            </form>
+        </main>
+
+        <script type="text/javascript" src="auth.js"></script>
+        <script type="text/javascript" src="../../include/jsencrypt.min.js"></script>
+        <script type="text/javascript" src="../../include/storage.js"></script>
+    </body>
+</html>

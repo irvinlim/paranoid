@@ -1,0 +1,10 @@
+.venv
+*.pyc
+.python-version
+.cache/
+.coverage
+.pytest_cache/
+
+db.sqlite3
+
+/static

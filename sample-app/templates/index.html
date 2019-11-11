@@ -1,0 +1,12 @@
+{% load static %}
+
+<html>
+    <head>
+        <title>Sample App</title>
+    </head>
+    <body>
+        {% csrf_token %}
+        <button id="login-btn">Login with Paranoid</button>
+        <script type="text/javascript" src="{% static "auth.js" %}"></script>
+    </body>
+</html>
