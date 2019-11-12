@@ -1,0 +1,32 @@
+const BASE_URL = 'http://127.0.0.1:8000';
+const APP_NAME = 'Sample App';
+
+function startAuthFlow() {
+  // Prepare query string parameters
+  const params = new URLSearchParams();
+  params.set('app_name', APP_NAME);
+  params.set('origin', BASE_URL);
+  params.set('register_callback', '/auth/paranoid/register');
+  params.set('login_callback', '/auth/paranoid/login/request');
+  params.set('state', document.querySelector('input[name=csrfmiddlewaretoken]').value);
+
+  // Open new window in Paranoid URL scheme
+  let callbackWindow = window.open(
+    `web+paranoid://authenticate?${params.toString()}`,
+    '',
+    'width=300,height=500'
+  );
+
+  // Wait for authentication flow to complete
+  const doneURL = `${BASE_URL}/auth/done`;
+  let interval = setInterval(function() {
+    if (callbackWindow.location.href === doneURL) {
+      callbackWindow.close();
+      clearInterval(interval);
+    }
+  }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelector('#login-btn').addEventListener('click', startAuthFlow);
+});
