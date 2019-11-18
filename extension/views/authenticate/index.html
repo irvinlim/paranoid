@@ -29,18 +29,14 @@
                 </strong>
             </p>
             <p>Do you wish to continue?</p>
+            <button class="btn approve">Yes, approve</button>
+            <button class="btn deny">No, deny</button>
 
-            <form class="form" method="POST">
-                <input type="hidden" name="state" />
-                <input type="hidden" name="pubkey" />
-                <input type="hidden" name="uid" />
-                <button type="submit" class="btn approve">Yes, approve</button>
-                <button class="btn deny">No, deny</button>
-            </form>
         </main>
 
-        <script type="text/javascript" src="auth.js"></script>
         <script type="text/javascript" src="../../include/jsencrypt.min.js"></script>
         <script type="text/javascript" src="../../include/storage.js"></script>
+        <script type="text/javascript" src="../../include/crypto-js.min.js"></script>
+        <script type="text/javascript" src="auth.js"></script>
     </body>
 </html>

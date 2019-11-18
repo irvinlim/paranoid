@@ -23,5 +23,5 @@ from . import views
 urlpatterns = [
     path('', views.index),
     path('admin/', admin.site.urls),
-    path('auth/', include('auth.urls')),
+    path('auth/', include('paranoid_auth.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

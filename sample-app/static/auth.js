@@ -7,7 +7,7 @@ function startAuthFlow() {
   params.set('app_name', APP_NAME);
   params.set('origin', BASE_URL);
   params.set('register_callback', '/auth/paranoid/register');
-  params.set('login_callback', '/auth/paranoid/login/request');
+  params.set('login_callback', '/auth/paranoid/login');
   params.set('state', document.querySelector('input[name=csrfmiddlewaretoken]').value);
 
   // Open new window in Paranoid URL scheme
@@ -18,12 +18,18 @@ function startAuthFlow() {
   );
 
   // Wait for authentication flow to complete
-  const doneURL = `${BASE_URL}/auth/done`;
-  let interval = setInterval(function() {
-    if (callbackWindow.location.href === doneURL) {
-      callbackWindow.close();
-      clearInterval(interval);
-    }
+  // const doneURL = `${BASE_URL}/auth/done`;
+  // let interval = setInterval(function() {
+  //   if (callbackWindow.location.href === doneURL) {
+  //     callbackWindow.close();
+  //     clearInterval(interval);
+  //   }
+  // }, 1000);
+  let interval = setInterval(function() {   
+    if(callbackWindow.closed) {  
+        clearInterval(interval);  
+        window.location.reload();
+    }  
   }, 1000);
 }
 
