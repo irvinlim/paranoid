@@ -37,7 +37,7 @@ class ParanoidStorage {
 
   static async get(key) {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get([key], function(items) {
+      chrome.storage.sync.get([key], function(items) {
         if (chrome.runtime.lastError) {
           resolve(undefined);
         } else {
@@ -49,7 +49,7 @@ class ParanoidStorage {
 
   static async set(key, value) {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.set({ [key]: value }, function() {
+      chrome.storage.sync.set({ [key]: value }, function() {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError.message);
         } else {
@@ -61,7 +61,7 @@ class ParanoidStorage {
 
   static async _getAll() {
     return new Promise(resolve => {
-      chrome.storage.local.get(null, function(items) {
+      chrome.storage.sync.get(null, function(items) {
         resolve(items);
       });
     });
