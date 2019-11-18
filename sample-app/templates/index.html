@@ -7,8 +7,8 @@
     <body>
         {% csrf_token %}
         <button id="login-btn">Login with Paranoid</button>
-        <script type="text/javascript" src="{% static "auth.js" %}"></script>
-        <paranoid uid="user1" attribute="name">Placeholder Text</paranoid>
-        <paranoid uid="user1" attribute="last_name">Placeholder Text</paranoid>
+        <script type="text/javascript" src="{% static 'auth.js' %}"></script>
+        <paranoid uid="{{ uid }}" attribute="first_name">Placeholder Text</paranoid>
+        <paranoid uid="{{ uid }}" attribute="last_name">Placeholder Text</paranoid>
     </body>
 </html>

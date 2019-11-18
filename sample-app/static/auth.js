@@ -10,6 +10,7 @@ function startAuthFlow() {
   params.set('login_callback', '/auth/paranoid/login');
   params.set('map_path', '/paranoid_map');
   params.set('state', document.querySelector('input[name=csrfmiddlewaretoken]').value);
+  params.set('csrfcookie', getCookie('csrftoken'));
 
   // Open new window in Paranoid URL scheme
   let callbackWindow = window.open(
@@ -37,3 +38,9 @@ function startAuthFlow() {
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#login-btn').addEventListener('click', startAuthFlow);
 });
+
+function getCookie(name) {
+  var value = "; " + document.cookie;
+  var parts = value.split("; " + name + "=");
+  if (parts.length == 2) return parts.pop().split(";").shift();
+}

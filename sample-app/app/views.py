@@ -3,7 +3,10 @@ from django.shortcuts import render
 
 # Create your views here.
 def index(request):
-    context = {}
+    if 'uid' in request.session:
+        context = {'uid':  request.session['uid']}
+    else:
+        context = {'uid':  -1}
     return render(request, 'index.html', context)
 
 def paranoid_mappings(request):

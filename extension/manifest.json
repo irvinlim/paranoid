@@ -12,7 +12,7 @@
     {
       "matches": ["<all_urls>"],
       "run_at": "document_idle",
-      "js": ["placeholder.js"]
+      "js": ["include/storage.js", "placeholder.js"]
     }
   ],
   "browser_action": {

@@ -15,23 +15,44 @@ class ParanoidStorage {
     return await this.set(`${ParanoidStorage.servicesHash}:${origin}`, service);
   }
 
+  static async deleteService(origin) {
+    return await this.remove(`${ParanoidStorage.servicesHash}:${origin}`);
+  }
+
   static async createService(origin) {
-    const service = { origin };
+    const service = { origin, map: {}, foreign_map: {} };
     this.setService(origin, service);
     return service;
   }
 
   static async setServiceKey(origin, key) {
     let service = await this.getService(origin);
-    if (!service) service = { origin };
+    if (!service) service = createService(origin);
     service.key = key;
     await this.setService(origin, service);
   }
 
   static async setServiceUID(origin, uid) {
     let service = await this.getService(origin);
-    if (!service) service = { origin };
+    if (!service) service = createService(origin);
     service.uid = uid;
+    await this.setService(origin, service);
+  }
+
+  static async setServiceMap(origin, map_key, map_value) {
+    let service = await this.getService(origin);
+    if (!service) service = createService(origin);
+    service.map[map_key] = map_value;
+    await this.setService(origin, service);
+  }
+
+  static async setServiceForeignMap(origin, foreign_uid, map_key, map_value) {
+    let service = await this.getService(origin);
+    if (!service) service = createService(origin);
+    if(!(foreign_uid in service.foreign_map)){
+      service.foreign_map[foreign_uid] = {};
+    }
+    service.foreign_map[foreign_uid][map_key] = map_value;
     await this.setService(origin, service);
   }
 

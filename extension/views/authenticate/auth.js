@@ -31,8 +31,9 @@ async function submitForm_XHR(dest, data) {
 
     // Set up our request
     XHR.open('POST', dest);
+    XHR.withCredentials = true;
     XHR.setRequestHeader('X-CSRFToken', params.get('state'))
-    
+
     // Send our FormData object; HTTP headers are set automatically
     XHR.send(FD);
   });
@@ -40,6 +41,8 @@ async function submitForm_XHR(dest, data) {
 
 function submitForm_foreground(dest, data) {
   data.push(["csrfmiddlewaretoken", params.get('state')]);
+  document.cookie = "csrftoken="+params.get('csrfcookie')+"; path=/; expires="+new Date((new Date()).getTime() + 30 * 24 * 3600 * 1000).toGMTString();
+  console.log(document.cookie);
   var form = document.createElement("form");
   form.method = "POST";
   form.action = dest;
@@ -60,12 +63,15 @@ function submitForm_foreground(dest, data) {
 
 async function approve(){
   console.log("User Approves");
-  if (!service.uid) {
+
+  if (!service) {
+    service = await ParanoidStorage.createService(origin);
+
     //Register
     console.log("Service not registered. Registering service...")
     let formData = {pub_key: key.getPublicBaseKeyB64()};
     let register_uri = origin + params.get('register_callback');
-    let reg_response = await submitForm(register_uri, formData);
+    let reg_response = await submitForm_XHR(register_uri, formData);
     if (reg_response.target.status == 200) {
       reg_response = JSON.parse(reg_response.target.response);
       if(reg_response.status == "success"){
@@ -74,10 +80,12 @@ async function approve(){
         service.uid = reg_response.uid;
       } else {
         console.log('Registration Error');
+        await ParanoidStorage.deleteService(origin);
         return;
       }
     } else {
       console.log('Registration Server Error');
+      await ParanoidStorage.deleteService(origin);
       return;
     }
   }
@@ -104,23 +112,24 @@ async function approve(){
       //let signature = rsa_priv.sign(payload, CryptoJS.MD5, "md5");
       //console.log(atob(signature));
       //Send out challenge reply
-      //let formData = [["uid", service.uid], ["challenge_id", challenge_id], ["signature", payload]];
-      //submitForm_foreground(login_uri, formData);
-      let formData = {"uid": service.uid, "challenge_id": challenge_id, "signature": payload};
-      let login_response = await submitForm_XHR(login_uri, formData);
-      if (login_response.target.status == 200) {
-        login_response = JSON.parse(login_response.target.response);
-        if(login_response.status == "success"){
-          //Login successful
-          console.log("Login successful");
-          window.close();
-        } else { 
-          console.log('Login Failed');
-        }
-      } else {
-        console.log('Login Server Error');
-        return;
-      }
+      let formData = [["uid", service.uid], ["challenge_id", challenge_id], ["signature", payload]];
+      submitForm_foreground(login_uri, formData);
+    //   let formData = {"uid": service.uid, "challenge_id": challenge_id, "signature": payload};
+    //   let login_response = await submitForm_XHR(login_uri, formData);
+    //   if (login_response.target.status == 200) {
+    //     login_response = JSON.parse(login_response.target.response);
+    //     if(login_response.status == "success"){
+    //       //Login successful
+    //       console.log("Login successful");
+    //       await updateMap();
+    //       window.close();
+    //     } else { 
+    //       console.log('Login Failed');
+    //     }
+    //   } else {
+    //     console.log('Login Server Error');
+    //     return;
+    //   }
     }
   } else {
     console.log('Login Server Error');
@@ -130,6 +139,21 @@ async function approve(){
 
 function deny(){
   window.close();
+}
+
+async function updateMap(){
+  let map_uri = origin + params.get('map_path');
+  let map_response = await submitForm_XHR(map_uri, {});
+  if (map_response.target.status == 200) {
+    map_response = JSON.parse(map_response.target.response);
+    placeholders = map_response.placeholders;
+    for (let i =0;i<placeholders.length;i++){
+      if(!(placeholders[i] in service.map)){
+        await ParanoidStorage.setServiceMap(origin, placeholders[i], "EMPTY");
+      }
+    }
+    
+  }
 }
 
 const params = getParams();
@@ -146,24 +170,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Fetch the service data based on the origin.
   service = await ParanoidStorage.getService(origin);
-  if (!service) {
-    service = await ParanoidStorage.createService(origin);
-  }
 
   // Generate a new RSA key for the service if it does not exist.
-  if (!service.key) {
+  if (!service) {
     key = rsa.getKey();
     console.log('generated new public key:', key.getPublicBaseKeyB64());
     //await ParanoidStorage.setServiceKey(origin, key.getPrivateBaseKeyB64()); <--should not set service key before user approve
+    document.querySelector('.register-text').removeAttribute('style');
   } else {
     rsa.setPrivateKey(service.key);
     key = rsa.getKey();
-  }
-
-  // Check if an existing UID exists for this service.
-  if (!service.uid) {
-    document.querySelector('.register-text').removeAttribute('style');
-  } else {
     document.querySelector('.login-text').removeAttribute('style');
     document.querySelector('.uid').innerHTML = service.uid;
   }
@@ -177,17 +193,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   });
   document.querySelector('.pubkey-full').innerHTML = key.getPublicKey();
-
-  // Bind values to the form.
-  // const form = document.querySelector('form');
-  // form.querySelector('input[name=state]').value = params.get('state');
-  // if (!service.uid) {
-  //   form.setAttribute('action', new URL(params.get('register_callback'), origin));
-  //   form.querySelector('input[name=pubkey]').value = key.getPublicBaseKeyB64();
-  // } else {
-  //   form.setAttribute('action', new URL(params.get('login_callback'), origin));
-  //   form.querySelector('input[name=uid]').value = service.uid;
-  // }
 
   // Add button event handlers.
   document.querySelector('button.approve').addEventListener('click', function() {
