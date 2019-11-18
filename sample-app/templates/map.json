@@ -1,4 +1,4 @@
 {
-    "placeholders": ["first_name", "last_name", "email", "image"],
+    "placeholders": ["first_name", "last_name", "email", "image", "bio"],
     "last_updated": 1574027849888
 }

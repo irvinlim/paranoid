@@ -2,13 +2,56 @@
 
 <html>
     <head>
-        <title>Sample App</title>
+        <title>Paranoid Sample App</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     </head>
     <body>
-        {% csrf_token %}
-        <button id="login-btn">Login with Paranoid</button>
+
+        <nav class="navbar navbar-light bg-light">
+            <a class="navbar-brand" href="#">
+                <img src="/docs/4.3/assets/brand/bootstrap-solid.svg" width="30" height="30" class="d-inline-block align-top" alt="">
+                Paranoid
+            </a>
+            <div class="form-inline">
+                {% if auth_uid == -1 %}
+                    {% csrf_token %}
+                    <button id="login-btn" class="btn btn-outline-secondary my-2 my-sm-0">Login with Paranoid</button>
+                {% else %}
+                    Welcome, 
+                    <paranoid uid="{{ auth_uid }}" attribute="first_name" class="ml-1 mr-1">Hidden Content</paranoid>
+                    <paranoid uid="{{ auth_uid }}" attribute="last_name">Hidden Content</paranoid>
+                    <button id="logout-btn" class="btn btn-outline-secondary my-2 my-sm-0 ml-2">Logout</button>
+                {% endif %}
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- Content here -->
+            {% for user in users %}
+                {% if forloop.counter0|divisibleby:4 %}
+                    {% if not forloop.first %}
+                        </div>
+                    {% endif %}
+                    <div class="row mt-2 mb-1">
+                {% endif %}
+                        <div class="col-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><paranoid uid="{{ user.uid }}" attribute="first_name">Hidden Content</paranoid></h5>
+                                    <h6 class="card-subtitle mb-2 text-muted"><paranoid uid="{{ user.uid }}" attribute="email">Hidden Content</paranoid></h6>
+                                    <p class="card-text"><paranoid uid="{{ user.uid }}" attribute="bio">Hidden Content</paranoid></p>
+                                </div>
+                            </div>
+                        </div>
+            {% endfor %}
+                    </div>
+        </div>
+        
+
+        
         <script type="text/javascript" src="{% static 'auth.js' %}"></script>
-        <paranoid uid="{{ uid }}" attribute="first_name">Placeholder Text</paranoid>
-        <paranoid uid="{{ uid }}" attribute="last_name">Placeholder Text</paranoid>
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     </body>
 </html>

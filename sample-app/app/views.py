@@ -1,12 +1,13 @@
 from django.shortcuts import render
-
+from app.models import User
 
 # Create your views here.
 def index(request):
+    userlist = User.objects.all()
     if 'uid' in request.session:
-        context = {'uid':  request.session['uid']}
+        context = {'auth_uid':  request.session['uid'], 'users': userlist}
     else:
-        context = {'uid':  -1}
+        context = {'auth_uid':  -1, 'users': userlist}
     return render(request, 'index.html', context)
 
 def paranoid_mappings(request):
