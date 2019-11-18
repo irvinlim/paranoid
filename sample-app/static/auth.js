@@ -8,6 +8,7 @@ function startAuthFlow() {
   params.set('origin', BASE_URL);
   params.set('register_callback', '/auth/paranoid/register');
   params.set('login_callback', '/auth/paranoid/login');
+  params.set('map_path', '/paranoid_map');
   params.set('state', document.querySelector('input[name=csrfmiddlewaretoken]').value);
 
   // Open new window in Paranoid URL scheme
