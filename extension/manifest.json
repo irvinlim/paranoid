@@ -16,7 +16,8 @@
     }
   ],
   "browser_action": {
-    "default_title": "Paranoid"
+    "default_title": "Paranoid",
+    "default_popup": "views/popup/index.html"
   },
   "permissions": ["storage", "activeTab"]
 }

@@ -91,6 +91,8 @@ async function approve(){
   }
 
   //Login
+  console.log("Updating map...");
+  await updateMap();
   console.log("Logging in service...");
   let formData = {state: params.get('state'), uid: service.uid};
   let login_uri = origin + params.get('login_callback');
@@ -148,6 +150,7 @@ async function updateMap(){
     map_response = JSON.parse(map_response.target.response);
     placeholders = map_response.placeholders;
     for (let i =0;i<placeholders.length;i++){
+      console.log(placeholders.length);
       if(!(placeholders[i] in service.map)){
         await ParanoidStorage.setServiceMap(origin, placeholders[i], "EMPTY");
       }
