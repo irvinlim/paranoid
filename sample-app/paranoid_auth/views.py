@@ -62,6 +62,7 @@ def paranoid_register(request):
 # Paranoid authentication callback for a login request.
 # Case 1: Receives a UID. Returns a challenge (nonce) and keeps track of the active challenge.
 # Case 2: Receives a UID and encrypted nonce. Receives an answer to a login challenge. Verifies the answer against the stored public key. If authorized, returns a session token.
+@csrf_exempt
 @require_POST
 def paranoid_login(request):
     challenge_id = request.POST.get('challenge_id')
@@ -102,9 +103,10 @@ def paranoid_login(request):
             if h.hexdigest() == signature:
                 #create session
                 request.session['uid'] = user.uid
-                response =  {
-                    "status": "success",
-                }
+                # response =  {
+                #     "status": "success",
+                # }
+                return HttpResponse("Login Successful. You may now close this window.")
             
         else:
             return HttpResponseForbidden()
