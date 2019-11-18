@@ -1,6 +1,6 @@
 from django.http import HttpResponse, HttpResponseForbidden
 from django.middleware import csrf
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -113,4 +113,11 @@ def paranoid_login(request):
 
     return HttpResponse(json.dumps(response), content_type="application/json")
 
-    
+# Paranoid logout request.
+@csrf_exempt
+def paranoid_logout(request):
+    try:
+        del request.session['uid']
+    except KeyError:
+        pass
+    return redirect('/')

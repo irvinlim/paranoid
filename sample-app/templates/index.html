@@ -20,7 +20,7 @@
                     Welcome, 
                     <paranoid uid="{{ auth_uid }}" attribute="first_name" class="ml-1 mr-1">Hidden Content</paranoid>
                     <paranoid uid="{{ auth_uid }}" attribute="last_name">Hidden Content</paranoid>
-                    <button id="logout-btn" class="btn btn-outline-secondary my-2 my-sm-0 ml-2">Logout</button>
+                    <button id="logout-btn" class="btn btn-outline-secondary my-2 my-sm-0 ml-2" onclick="window.location='/auth/paranoid/logout';">Logout</button>
                 {% endif %}
             </div>
         </nav>
