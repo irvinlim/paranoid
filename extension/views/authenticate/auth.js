@@ -69,7 +69,8 @@ async function updatePlaceholderMap(service) {
   // Initialize placeholder mappings for service.
   for (let placeholder of placeholders) {
     if (!(placeholder in service.map)) {
-      await ParanoidStorage.setServiceMap(origin, placeholder, 'EMPTY');
+      // Default value for a placeholder would be `{attribute_name}`
+      await ParanoidStorage.setServiceMap(origin, placeholder, `{${placeholder}}`);
     }
   }
 }
