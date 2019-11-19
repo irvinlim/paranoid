@@ -25,8 +25,8 @@ See [`sample-app/README.md`](`sample-app/README.md`).
 ### TODO for Chromium Extension
 
 - [x] Create app shell for the extension
-- [ ] Complete registration flow
-- [ ] Complete login flow
-- [ ] Unmasking of placeholders
+- [x] Complete registration flow
+- [x] Complete login flow
+- [x] Unmasking of placeholders
 - [ ] Implement filesystem-backed storage
 - [ ] Implement permission granting between end-users

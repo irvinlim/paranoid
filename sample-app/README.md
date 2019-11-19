@@ -11,7 +11,13 @@ This is a sample application that allows a user to initiate the Paranoid login f
    pip install -r requirements.txt
    ```
 
-3. Start Django server
+3. Run migrations
+
+   ```sh
+   python manage.py migrate
+   ```
+
+4. Start Django server
 
    ```sh
    python manage.py runserver
@@ -19,8 +25,8 @@ This is a sample application that allows a user to initiate the Paranoid login f
 
 ## TODO
 
-- [ ] Create basic models
-- [ ] Create registration flow
-- [ ] Create login flow
-- [ ] Display placeholder-masked data on some page
+- [x] Create basic models
+- [x] Create registration flow
+- [x] Create login flow
+- [x] Display placeholder-masked data on some page
 - [ ] Allow user to add new placeholder-masked data
