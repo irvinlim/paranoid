@@ -13,9 +13,7 @@
   for (let tag of tags) {
     const uid = parseInt(tag.getAttribute('uid'));
     const attribute = tag.getAttribute('attribute');
-    // console.log(uid);
-    // console.log(service.uid);
-    // console.log(service.foreign_map);
+
     if (uid === service.uid || uid in service.foreign_map) {
       let unmasked_data = '';
       if (uid === service.uid) {
