@@ -29,7 +29,10 @@ function startAuthFlow() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelector('#login-btn').addEventListener('click', startAuthFlow);
+  const loginBtn = document.querySelector('#login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', startAuthFlow);
+  }
 });
 
 function getCookie(name) {
