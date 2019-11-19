@@ -2,22 +2,22 @@
 
 <html>
     <head>
-        <title>Paranoid Sample App</title>
+        <title>Fakebook</title>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     </head>
     <body>
 
         <nav class="navbar navbar-light bg-light">
             <a class="navbar-brand" href="#">
-                <img src="/docs/4.3/assets/brand/bootstrap-solid.svg" width="30" height="30" class="d-inline-block align-top" alt="">
-                Paranoid
+                <img src="{% static 'img/logo.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
+                Fakebook
             </a>
             <div class="form-inline">
                 {% if auth_uid == -1 %}
                     {% csrf_token %}
                     <button id="login-btn" class="btn btn-outline-secondary my-2 my-sm-0">Login with Paranoid</button>
                 {% else %}
-                    Welcome, 
+                    Welcome,
                     <paranoid uid="{{ auth_uid }}" attribute="first_name" class="ml-1 mr-1">Hidden Content</paranoid>
                     <paranoid uid="{{ auth_uid }}" attribute="last_name">Hidden Content</paranoid>
                     <button id="logout-btn" class="btn btn-outline-secondary my-2 my-sm-0 ml-2" onclick="window.location='/auth/paranoid/logout';">Logout</button>
@@ -46,9 +46,9 @@
             {% endfor %}
                     </div>
         </div>
-        
 
-        
+
+
         <script type="text/javascript" src="{% static 'auth.js' %}"></script>
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>

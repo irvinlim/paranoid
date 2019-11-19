@@ -24,5 +24,6 @@ urlpatterns = [
     path('', views.index),
     path('paranoid_map', views.paranoid_mappings),
     path('admin/', admin.site.urls),
-    path('auth/', include('paranoid_auth.urls')),
+    path('auth/paranoid/', include('paranoid_auth.urls')),
+    path('evil/', include('evil.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
