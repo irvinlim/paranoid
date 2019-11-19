@@ -10,10 +10,10 @@ function getParams() {
 async function submitForm_XHR(dest, data) {
   return new Promise(resolve => {
     var XHR = new XMLHttpRequest();
-    var FD  = new FormData();
+    var FD = new FormData();
 
     // Push our data into our FormData object
-    for(name in data) {
+    for (name in data) {
       FD.append(name, data[name]);
     }
 
@@ -32,7 +32,7 @@ async function submitForm_XHR(dest, data) {
     // Set up our request
     XHR.open('POST', dest);
     XHR.withCredentials = true;
-    XHR.setRequestHeader('X-CSRFToken', params.get('state'))
+    XHR.setRequestHeader('X-CSRFToken', params.get('state'));
 
     // Send our FormData object; HTTP headers are set automatically
     XHR.send(FD);
@@ -40,20 +40,24 @@ async function submitForm_XHR(dest, data) {
 }
 
 function submitForm_foreground(dest, data) {
-  data.push(["csrfmiddlewaretoken", params.get('state')]);
-  document.cookie = "csrftoken="+params.get('csrfcookie')+"; path=/; expires="+new Date((new Date()).getTime() + 30 * 24 * 3600 * 1000).toGMTString();
+  data.push(['csrfmiddlewaretoken', params.get('state')]);
+  document.cookie =
+    'csrftoken=' +
+    params.get('csrfcookie') +
+    '; path=/; expires=' +
+    new Date(new Date().getTime() + 30 * 24 * 3600 * 1000).toGMTString();
   console.log(document.cookie);
-  var form = document.createElement("form");
-  form.method = "POST";
+  var form = document.createElement('form');
+  form.method = 'POST';
   form.action = dest;
 
-  for (let i = 0;i<data.length;i++){
+  for (let i = 0; i < data.length; i++) {
     let data_entry = data[i];
-    let element = document.createElement("input");
+    let element = document.createElement('input');
     element.name = data_entry[0];
     element.value = data_entry[1];
-    element.type = "hidden";
-    form.appendChild(element);  
+    element.type = 'hidden';
+    form.appendChild(element);
   }
 
   document.body.appendChild(form);
@@ -61,20 +65,20 @@ function submitForm_foreground(dest, data) {
   form.submit();
 }
 
-async function approve(){
-  console.log("User Approves");
+async function approve() {
+  console.log('User Approves');
 
   if (!service) {
     service = await ParanoidStorage.createService(origin);
 
     //Register
-    console.log("Service not registered. Registering service...")
-    let formData = {pub_key: key.getPublicBaseKeyB64()};
+    console.log('Service not registered. Registering service...');
+    let formData = { pub_key: key.getPublicBaseKeyB64() };
     let register_uri = origin + params.get('register_callback');
     let reg_response = await submitForm_XHR(register_uri, formData);
     if (reg_response.target.status == 200) {
       reg_response = JSON.parse(reg_response.target.response);
-      if(reg_response.status == "success"){
+      if (reg_response.status == 'success') {
         await ParanoidStorage.setServiceKey(origin, key.getPrivateBaseKeyB64());
         await ParanoidStorage.setServiceUID(origin, reg_response.uid);
         service.uid = reg_response.uid;
@@ -91,15 +95,15 @@ async function approve(){
   }
 
   //Login
-  console.log("Updating map...");
+  console.log('Updating map...');
   await updateMap();
-  console.log("Logging in service...");
-  let formData = {state: params.get('state'), uid: service.uid};
+  console.log('Logging in service...');
+  let formData = { state: params.get('state'), uid: service.uid };
   let login_uri = origin + params.get('login_callback');
   let nonce_response = await submitForm_XHR(login_uri, formData);
   if (nonce_response.target.status == 200) {
     nonce_response = JSON.parse(nonce_response.target.response);
-    if (nonce_response.status == "success"){
+    if (nonce_response.status == 'success') {
       //complete nonce challenge
       let pub_encrypted_nonce = nonce_response.nonce;
       let challenge_id = nonce_response.challenge_id;
@@ -109,29 +113,33 @@ async function approve(){
       //Generate signature
       let rsa_priv = new JSEncrypt();
       rsa_priv.setPrivateKey(key.getPrivateBaseKeyB64());
-      let payload = CryptoJS.MD5(challenge_id+":"+nonce).toString();
+      let payload = CryptoJS.MD5(challenge_id + ':' + nonce).toString();
       //console.log(payload);
       //let signature = rsa_priv.sign(payload, CryptoJS.MD5, "md5");
       //console.log(atob(signature));
       //Send out challenge reply
-      let formData = [["uid", service.uid], ["challenge_id", challenge_id], ["signature", payload]];
+      let formData = [
+        ['uid', service.uid],
+        ['challenge_id', challenge_id],
+        ['signature', payload],
+      ];
       submitForm_foreground(login_uri, formData);
-    //   let formData = {"uid": service.uid, "challenge_id": challenge_id, "signature": payload};
-    //   let login_response = await submitForm_XHR(login_uri, formData);
-    //   if (login_response.target.status == 200) {
-    //     login_response = JSON.parse(login_response.target.response);
-    //     if(login_response.status == "success"){
-    //       //Login successful
-    //       console.log("Login successful");
-    //       await updateMap();
-    //       window.close();
-    //     } else { 
-    //       console.log('Login Failed');
-    //     }
-    //   } else {
-    //     console.log('Login Server Error');
-    //     return;
-    //   }
+      //   let formData = {"uid": service.uid, "challenge_id": challenge_id, "signature": payload};
+      //   let login_response = await submitForm_XHR(login_uri, formData);
+      //   if (login_response.target.status == 200) {
+      //     login_response = JSON.parse(login_response.target.response);
+      //     if(login_response.status == "success"){
+      //       //Login successful
+      //       console.log("Login successful");
+      //       await updateMap();
+      //       window.close();
+      //     } else {
+      //       console.log('Login Failed');
+      //     }
+      //   } else {
+      //     console.log('Login Server Error');
+      //     return;
+      //   }
     }
   } else {
     console.log('Login Server Error');
@@ -139,23 +147,22 @@ async function approve(){
   }
 }
 
-function deny(){
+function deny() {
   window.close();
 }
 
-async function updateMap(){
+async function updateMap() {
   let map_uri = origin + params.get('map_path');
   let map_response = await submitForm_XHR(map_uri, {});
   if (map_response.target.status == 200) {
     map_response = JSON.parse(map_response.target.response);
     placeholders = map_response.placeholders;
-    for (let i =0;i<placeholders.length;i++){
+    for (let i = 0; i < placeholders.length; i++) {
       console.log(placeholders.length);
-      if(!(placeholders[i] in service.map)){
-        await ParanoidStorage.setServiceMap(origin, placeholders[i], "EMPTY");
+      if (!(placeholders[i] in service.map)) {
+        await ParanoidStorage.setServiceMap(origin, placeholders[i], 'EMPTY');
       }
     }
-    
   }
 }
 
@@ -166,8 +173,7 @@ let key;
 const rsa = new JSEncrypt();
 
 document.addEventListener('DOMContentLoaded', async function() {
-  
-  if(!params){
+  if (!params) {
     throw new Exception('Cannot parse params.');
   }
 

@@ -1,21 +1,22 @@
+import json
+from base64 import b64decode, b64encode
+
+from Crypto import Random
+from Crypto.Cipher import PKCS1_v1_5
+from Crypto.Hash import MD5, SHA
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
+from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseForbidden
 from django.middleware import csrf
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
 from app.models import User
-from paranoid_auth.models import NonceChallenge
-from django.db import IntegrityError
-import json
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_v1_5
-from Crypto.Hash import SHA
-from Crypto import Random
-from base64 import b64decode, b64encode
-from Crypto.Signature import pkcs1_15
-from Crypto.Hash import MD5
 from paranoid_auth.helper import random_string_generator
+from paranoid_auth.models import NonceChallenge
 
 
 # Landing page to login.
@@ -41,7 +42,7 @@ def paranoid_register(request):
     try:
         newUser.save()
         context = {}
-        response =  {
+        response = {
             "status": "success",
             "uid": newUser.uid,
         }
@@ -49,13 +50,13 @@ def paranoid_register(request):
         print(e.args[0])
         if 'UNIQUE constraint' in e.args[0]:
             existing_user = User.objects.get(pub_key=pubkey)
-            response =  {
+            response = {
                 "status": "success",
                 "uid": existing_user.uid,
             }
         else:
             return HttpResponseForbidden()
-    
+
     return HttpResponse(json.dumps(response), content_type="application/json")
 
 
@@ -75,24 +76,24 @@ def paranoid_login(request):
 
     if challenge_id is None or signature is None:
         #Generate challenge
-        
+
         challenge = NonceChallenge(uid=uid, nonce=random_string_generator())
         challenge.save()
         print(challenge.nonce)
         cipher_rsa = PKCS1_v1_5.new(pub_key)
         ciphertext = cipher_rsa.encrypt(bytes(str(challenge.nonce), encoding="utf-8"))
-        response =  {
+        response = {
             "status": "success",
             "challenge_id": challenge.challenge_id,
             "nonce": b64encode(ciphertext).decode('utf8').replace("'", '"'),
         }
-        
+
     else:
         if challenge_id is not None and signature is not None:
             #Verify challenge reply
             challengeObj = NonceChallenge.objects.get(challenge_id=challenge_id)
-            payload = "{}:{}".format(challengeObj.challenge_id,challengeObj.nonce)
-            
+            payload = "{}:{}".format(challengeObj.challenge_id, challengeObj.nonce)
+
             #signature = b64decode(signature)
             #print(signature)
             #cipher_rsa = pkcs1_15.new(pub_key)
@@ -107,11 +108,12 @@ def paranoid_login(request):
                 #     "status": "success",
                 # }
                 return HttpResponse("Login Successful. You may now close this window.")
-            
+
         else:
             return HttpResponseForbidden()
 
     return HttpResponse(json.dumps(response), content_type="application/json")
+
 
 # Paranoid logout request.
 @csrf_exempt

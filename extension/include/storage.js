@@ -49,7 +49,7 @@ class ParanoidStorage {
   static async setServiceForeignMap(origin, foreign_uid, map_key, map_value) {
     let service = await this.getService(origin);
     if (!service) service = createService(origin);
-    if(!(foreign_uid in service.foreign_map)){
+    if (!(foreign_uid in service.foreign_map)) {
       service.foreign_map[foreign_uid] = {};
     }
     service.foreign_map[foreign_uid][map_key] = map_value;
