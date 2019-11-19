@@ -19,19 +19,12 @@ function startAuthFlow() {
     'width=300,height=500'
   );
 
-  // Wait for authentication flow to complete
-  // const doneURL = `${BASE_URL}/auth/done`;
-  // let interval = setInterval(function() {
-  //   if (callbackWindow.location.href === doneURL) {
-  //     callbackWindow.close();
-  //     clearInterval(interval);
-  //   }
-  // }, 1000);
-  let interval = setInterval(function() {   
-    if(callbackWindow.closed) {  
-        clearInterval(interval);  
-        window.location.reload();
-    }  
+  // Wait for authentication flow to complete (user has to close the window explicitly)
+  const interval = setInterval(function() {
+    if (callbackWindow.closed) {
+      clearInterval(interval);
+      window.location.reload();
+    }
   }, 1000);
 }
 
@@ -40,7 +33,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function getCookie(name) {
-  var value = "; " + document.cookie;
-  var parts = value.split("; " + name + "=");
-  if (parts.length == 2) return parts.pop().split(";").shift();
+  var value = '; ' + document.cookie;
+  var parts = value.split('; ' + name + '=');
+  if (parts.length == 2)
+    return parts
+      .pop()
+      .split(';')
+      .shift();
 }
