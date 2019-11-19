@@ -25,11 +25,6 @@ def index(request):
     return render(request, 'auth/index.html', context)
 
 
-# Path for authentication flow completion.
-def done(request):
-    return HttpResponse("Authentication flow complete. You may now close this window.")
-
-
 # Paranoid authentication callback for registration flow.
 # Receives the user's public key. Create a new user, assign a UID to the user and associate public key with UID.
 @require_POST
@@ -38,25 +33,23 @@ def paranoid_register(request):
     if not pubkey:
         return HttpResponseForbidden()
 
-    newUser = User(pub_key=pubkey)
+    # Create new or fetch existing User model instance based on public key
+    new_user = User(pub_key=pubkey)
     try:
-        newUser.save()
-        context = {}
-        response = {
-            "status": "success",
-            "uid": newUser.uid,
-        }
+        new_user.save()
+        uid = new_user.uid
     except IntegrityError as e:
         print(e.args[0])
-        if 'UNIQUE constraint' in e.args[0]:
-            existing_user = User.objects.get(pub_key=pubkey)
-            response = {
-                "status": "success",
-                "uid": existing_user.uid,
-            }
-        else:
+        if 'UNIQUE constraint' not in e.args[0]:
             return HttpResponseForbidden()
 
+        existing_user = User.objects.get(pub_key=pubkey)
+        uid = existing_user.uid
+
+    response = {
+        "status": "success",
+        "uid": uid,
+    }
     return HttpResponse(json.dumps(response), content_type="application/json")
 
 
@@ -70,16 +63,19 @@ def paranoid_login(request):
     signature = request.POST.get('signature')
     uid = request.POST.get('uid')
 
-    #Get user pub key
+    # Get user's pub key
     user = User.objects.get(uid=uid)
     pub_key = RSA.importKey(b64decode(user.pub_key))
 
+    # Client is requesting a new challenge
     if challenge_id is None or signature is None:
-        #Generate challenge
-
+        # Generate challenge
         challenge = NonceChallenge(uid=uid, nonce=random_string_generator())
         challenge.save()
-        print(challenge.nonce)
+
+        print('Generated new nonce challenge: uid={} id={} nonce={}'.format(uid, challenge.challenge_id, challenge.nonce))
+
+        # Encrypt nonce with public key
         cipher_rsa = PKCS1_v1_5.new(pub_key)
         ciphertext = cipher_rsa.encrypt(bytes(str(challenge.nonce), encoding="utf-8"))
         response = {
@@ -88,31 +84,29 @@ def paranoid_login(request):
             "nonce": b64encode(ciphertext).decode('utf8').replace("'", '"'),
         }
 
-    else:
-        if challenge_id is not None and signature is not None:
-            #Verify challenge reply
-            challengeObj = NonceChallenge.objects.get(challenge_id=challenge_id)
-            payload = "{}:{}".format(challengeObj.challenge_id, challengeObj.nonce)
+        return HttpResponse(json.dumps(response), content_type="application/json")
 
-            #signature = b64decode(signature)
-            #print(signature)
-            #cipher_rsa = pkcs1_15.new(pub_key)
-            h = SHA256.new()
-            h.update(payload.encode())
-            print(h.hexdigest())
-            #decrypted_nonce = cipher_rsa.verify(h, signature)
-            if h.hexdigest() == signature:
-                #create session
-                request.session['uid'] = user.uid
-                # response =  {
-                #     "status": "success",
-                # }
-                return HttpResponse("Login Successful. You may now close this window.")
+    # Client is replying with an answer to a challenge
+    elif challenge_id is not None and signature is not None:
+        # Verify challenge reply
+        challengeObj = NonceChallenge.objects.get(challenge_id=challenge_id)
+        payload = "{}:{}".format(challengeObj.challenge_id, challengeObj.nonce)
 
-        else:
+        # Construct expected hash
+        h = SHA256.new()
+        h.update(payload.encode())
+        expected = h.hexdigest()
+
+        # Verify the expected hash
+        if expected != signature:
             return HttpResponseForbidden()
 
-    return HttpResponse(json.dumps(response), content_type="application/json")
+        # Create session and return HTML
+        request.session['uid'] = user.uid
+        return HttpResponse("Login Successful. You may now close this window.")
+
+    else:
+        return HttpResponseForbidden()
 
 
 # Paranoid logout request.
