@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app.apps.AppConfig',
+    'evil.apps.EvilConfig',
     'paranoid_auth.apps.AuthConfig',
 ]
 
