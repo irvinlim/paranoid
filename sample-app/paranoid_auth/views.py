@@ -3,7 +3,7 @@ from base64 import b64decode, b64encode
 
 from Crypto import Random
 from Crypto.Cipher import PKCS1_v1_5
-from Crypto.Hash import MD5, SHA
+from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
 from django.db import IntegrityError
@@ -97,7 +97,7 @@ def paranoid_login(request):
             #signature = b64decode(signature)
             #print(signature)
             #cipher_rsa = pkcs1_15.new(pub_key)
-            h = MD5.new()
+            h = SHA256.new()
             h.update(payload.encode())
             print(h.hexdigest())
             #decrypted_nonce = cipher_rsa.verify(h, signature)

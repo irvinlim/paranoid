@@ -45,8 +45,7 @@ async function approve(key) {
   const answer = dec.decrypt(nonce);
 
   // Return a hash of the decrypted answer
-  // TODO: Use SHA-256 instead of MD5
-  const payload = CryptoJS.MD5(challenge_id + ':' + answer).toString();
+  const payload = CryptoJS.SHA256(challenge_id + ':' + answer).toString();
   const formData = [
     ['uid', service.uid],
     ['challenge_id', challenge_id],
