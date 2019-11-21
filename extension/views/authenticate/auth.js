@@ -67,12 +67,14 @@ async function updatePlaceholderMap(service) {
   const { placeholders } = await postFormXHR(mapURI, {});
 
   // Initialize placeholder mappings for service.
-  for (let placeholder of placeholders) {
-    if (!(placeholder in service.map)) {
-      // Default value for a placeholder would be `{attribute_name}`
-      await ParanoidStorage.setServiceMap(origin, placeholder, `{${placeholder}}`);
-    }
-  }
+  await Promise.all(
+    placeholders.map(async placeholder => {
+      if (!(placeholder in service.map)) {
+        // Default value for a placeholder would be `{attribute_name}`
+        await ParanoidStorage.setServiceMap(origin, placeholder, `{${placeholder}}`);
+      }
+    })
+  );
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
