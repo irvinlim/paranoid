@@ -61,21 +61,15 @@ async function postFormXHR(dest, data) {
 
 function postFormForeground(dest, data) {
   data.push(['csrfmiddlewaretoken', params.get('state')]);
-  document.cookie =
-    'csrftoken=' +
-    params.get('csrfcookie') +
-    '; path=/; expires=' +
-    new Date(new Date().getTime() + 30 * 24 * 3600 * 1000).toGMTString();
-  console.log(document.cookie);
-  var form = document.createElement('form');
+
+  const form = document.createElement('form');
   form.method = 'POST';
   form.action = dest;
 
-  for (let i = 0; i < data.length; i++) {
-    let data_entry = data[i];
-    let element = document.createElement('input');
-    element.name = data_entry[0];
-    element.value = data_entry[1];
+  for (let [name, value] of data) {
+    const element = document.createElement('input');
+    element.name = name;
+    element.value = value;
     element.type = 'hidden';
     form.appendChild(element);
   }
