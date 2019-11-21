@@ -1,5 +1,5 @@
 const BASE_URL = window.location.origin;
-const APP_NAME = 'Sample App';
+const APP_NAME = 'Fakebook';
 
 function startAuthFlow() {
   // Prepare query string parameters
