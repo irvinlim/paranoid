@@ -5,50 +5,111 @@
  */
 
 class ParanoidStorage {
-  static servicesHash = 'SVC';
+  static async addOrigin(origin) {
+    let origins = await this.getOrigins();
+    if (!origins) {
+      origins = [];
+    }
+
+    if (!origins.includes(origin)) {
+      origins.push(origin);
+      this.set('origins', origins);
+    }
+  }
+
+  static async getOrigins() {
+    return await this.get('origins');
+  }
 
   static async getService(origin) {
-    return await this.get(`${ParanoidStorage.servicesHash}:${origin}`);
+    return await this.get(`services/${origin}`);
   }
 
   static async setService(origin, service) {
-    return await this.set(`${ParanoidStorage.servicesHash}:${origin}`, service);
+    return await this.set(`services/${origin}`, service);
   }
 
   static async deleteService(origin) {
-    return await this.remove(`${ParanoidStorage.servicesHash}:${origin}`);
+    return await this.remove(`services/${origin}`);
   }
 
   static async createService(origin) {
-    const service = { origin, map: {}, foreign_map: {} };
-    this.setService(origin, service);
-    return service;
+    // Ensure identity doesn't already exist
+    const service = await this.getService(origin);
+    if (service) {
+      throw new Error(`Service already exists for ${origin}`);
+    }
+
+    // Create new service
+    const created = await this.setService(origin, {
+      origin,
+      uids: [],
+      foreign_map: {},
+    });
+
+    // Create origin mapping
+    await this.addOrigin(origin);
+
+    return created;
   }
 
-  static async setServiceKey(origin, key) {
-    let service = await this.getService(origin);
-    if (!service) service = createService(origin);
-    service.key = key;
-    await this.setService(origin, service);
+  static async getServiceIdentities(origin) {
+    const service = await this.getService(origin);
+    if (!service) {
+      throw new Error('Service does not exist');
+    }
+
+    return await Promise.all(service.uids.map(uid => this.getServiceIdentity(origin, uid)));
   }
 
-  static async setServiceUID(origin, uid) {
-    let service = await this.getService(origin);
-    if (!service) service = createService(origin);
-    service.uid = uid;
-    await this.setService(origin, service);
+  static async getServiceIdentity(origin, uid) {
+    return await this.get(`services/${origin}/identities/${uid}`);
   }
 
-  static async setServiceMap(origin, map_key, map_value) {
-    let service = await this.getService(origin);
-    if (!service) service = createService(origin);
-    service.map[map_key] = map_value;
-    await this.setService(origin, service);
+  static async setServiceIdentity(origin, uid, identity) {
+    return await this.set(`services/${origin}/identities/${uid}`, identity);
+  }
+
+  static async deleteServiceIdentity(origin, uid) {
+    return await this.remove(`services/${origin}/identities/${uid}`);
+  }
+
+  static async createServiceIdentity(origin, uid, key) {
+    // Ensure service exists
+    const service = await this.getService(origin);
+    if (!service) {
+      await this.setService(origin, service, { origin, foreign_map: {} });
+    }
+
+    // Ensure identity doesn't already exist
+    const identity = await this.getServiceIdentity(origin, uid);
+    if (identity) {
+      throw new Error(`Identity already exists for ${origin}:${uid}`);
+    }
+
+    // Create new identity for service
+    const created = await this.setServiceIdentity(origin, uid, {
+      origin,
+      uid,
+      key,
+      map: {},
+    });
+
+    // Add new mapping to service
+    if (!service.uids.includes(uid)) {
+      service.uids.push(uid);
+      await this.setService(origin, service);
+    }
+
+    return created;
   }
 
   static async setServiceForeignMap(origin, foreign_uid, map_key, map_value) {
     let service = await this.getService(origin);
-    if (!service) service = createService(origin);
+    if (!service) {
+      throw new Error('Service does not exist');
+    }
+
     if (!(foreign_uid in service.foreign_map)) {
       service.foreign_map[foreign_uid] = {};
     }
@@ -58,7 +119,7 @@ class ParanoidStorage {
 
   static async get(key) {
     return new Promise((resolve, reject) => {
-      chrome.storage.sync.get([key], function(items) {
+      chrome.storage.local.get([key], function(items) {
         if (chrome.runtime.lastError) {
           resolve(undefined);
         } else {
@@ -70,11 +131,11 @@ class ParanoidStorage {
 
   static async set(key, value) {
     return new Promise((resolve, reject) => {
-      chrome.storage.sync.set({ [key]: value }, function() {
+      chrome.storage.local.set({ [key]: value }, function() {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError.message);
         } else {
-          resolve();
+          resolve(value);
         }
       });
     });
@@ -82,7 +143,7 @@ class ParanoidStorage {
 
   static async _getAll() {
     return new Promise(resolve => {
-      chrome.storage.sync.get(null, function(items) {
+      chrome.storage.local.get(null, function(items) {
         resolve(items);
       });
     });

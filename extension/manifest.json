@@ -3,7 +3,7 @@
   "description": "ID manager helper for Paranoid",
   "version": "1.0",
   "manifest_version": 2,
-  "incognito":"split",
+  "incognito": "split",
   "background": {
     "scripts": ["background.js"],
     "persistent": false

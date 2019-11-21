@@ -1,28 +1,27 @@
-async function approve(key) {
+async function approve(origin, uid, key) {
   console.log('User Approves');
 
-  const origin = params.get('origin');
-  let service = await ParanoidStorage.getService(origin);
-  if (!service) {
-    // Initialize new service if it does not yet exist
-    service = await ParanoidStorage.createService(origin);
-
+  // Create service identity
+  if (uid === null) {
     // Send POST request to service registration callback
-    try {
-      console.log('Service not registered. Registering service...');
-      const registerURI = origin + params.get('register_callback');
-      const { uid } = await postFormXHR(registerURI, { pub_key: key.getPublicBaseKeyB64() });
-      await ParanoidStorage.setServiceKey(origin, key.getPrivateBaseKeyB64());
-      await ParanoidStorage.setServiceUID(origin, uid);
-      service.uid = uid;
-    } catch {
-      await ParanoidStorage.deleteService(origin);
-    }
+    console.log('Service not registered. Registering service...');
+    const registerURI = origin + params.get('register_callback');
+    ({ uid } = await postFormXHR(registerURI, { pub_key: key.getPublicBaseKeyB64() }));
+
+    // Initialize new service identity
+    console.log(`Creating service identity with UID ${uid}`);
+    await ParanoidStorage.createServiceIdentity(origin, uid, key.getPrivateBaseKeyB64());
   }
 
-  // Update placeholder map from service
+  // Fetch service identity
+  const identity = await ParanoidStorage.getServiceIdentity(origin, uid);
+  if (!identity) {
+    throw new Error(`Could not fetch service identity for uid ${uid}`);
+  }
+
+  // Update placeholder map for service identity
   console.log('Updating placeholder map...');
-  await updatePlaceholderMap(service);
+  await updatePlaceholderMap(identity);
 
   console.log('Logging into service...');
   let loginURI = origin + params.get('login_callback');
@@ -31,8 +30,8 @@ async function approve(key) {
   // Begin login request
   try {
     ({ nonce, challenge_id } = await postFormXHR(loginURI, {
+      uid,
       state: params.get('state'),
-      uid: service.uid,
     }));
   } catch (e) {
     console.error(e);
@@ -47,7 +46,7 @@ async function approve(key) {
   // Return a hash of the decrypted answer
   const payload = CryptoJS.SHA256(challenge_id + ':' + answer).toString();
   const formData = [
-    ['uid', service.uid],
+    ['uid', uid],
     ['challenge_id', challenge_id],
     ['signature', payload],
   ];
@@ -61,40 +60,53 @@ function deny() {
 }
 
 // Fetch and update the placeholder map for a service.
-async function updatePlaceholderMap(service) {
-  const origin = service.origin;
+async function updatePlaceholderMap(identity) {
+  const { origin, uid } = identity;
   const mapURI = origin + params.get('map_path');
   const { placeholders } = await postFormXHR(mapURI, {});
 
   // Initialize placeholder mappings for service.
-  await Promise.all(
-    placeholders.map(async placeholder => {
-      if (!(placeholder in service.map)) {
-        // Default value for a placeholder would be `{attribute_name}`
-        await ParanoidStorage.setServiceMap(origin, placeholder, `{${placeholder}}`);
-      }
-    })
-  );
+  for (let placeholder of placeholders) {
+    if (!(placeholder in identity.map)) {
+      identity.map[placeholder] = `{${placeholder}}`;
+    }
+  }
+
+  await ParanoidStorage.setServiceIdentity(identity.origin, identity.uid, identity);
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
   const origin = params.get('origin');
 
-  // Fetch the service data based on the origin.
-  const service = await ParanoidStorage.getService(origin);
+  // Create a new service if it does not exist.
+  let service = await ParanoidStorage.getService(origin);
+  if (!service) {
+    console.log(`Creating new service ${origin}`);
+    service = await ParanoidStorage.createService(origin);
+  }
+
+  if (!service) {
+    throw new Error('Could not fetch service');
+  }
+
+  // TODO: Handle multiple identities. For now just assumes a single identity per service.
+  const identities = await ParanoidStorage.getServiceIdentities(origin);
 
   // Generate a new RSA key for the service if it does not exist.
   const rsa = new JSEncrypt();
   let key;
-  if (!service) {
+  let uid = null;
+  if (identities.length === 0) {
     key = rsa.getKey();
     console.log('generated new public key:', key.getPublicBaseKeyB64());
     document.querySelector('.register-text').removeAttribute('style');
   } else {
-    rsa.setPrivateKey(service.key);
+    const identity = identities[0];
+    uid = identity.uid;
+    rsa.setPrivateKey(identity.key);
     key = rsa.getKey();
     document.querySelector('.login-text').removeAttribute('style');
-    document.querySelector('.uid').innerHTML = service.uid;
+    document.querySelector('.uid').innerHTML = uid;
   }
 
   // Replace template tags with data from query string.
@@ -109,7 +121,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Add button event handlers.
   document.querySelector('button.approve').addEventListener('click', async () => {
-    await approve(key);
+    await approve(origin, uid, key);
   });
   document.querySelector('button.deny').addEventListener('click', deny);
 });
