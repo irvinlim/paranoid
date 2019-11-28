@@ -27,7 +27,7 @@ class KeybaseFileNotFoundException(KeybaseException):
 
 
 class KeybaseClient:
-    def __init__(self, base_path='paranoid'):
+    def init(self, base_path='paranoid'):
         self.base_path = base_path
 
     @lru_cache()

@@ -21,6 +21,7 @@ from keybase import KeybaseClient
 # Create new Flask app
 app = Flask('paranoid-daemon')
 
+# Create Keybase client
 keybase = KeybaseClient()
 
 
@@ -41,7 +42,7 @@ def get_origins():
 )
 def main(port, base_path):
     # Initialize Keybase client
-    keybase.base_path = base_path
+    keybase.init(base_path=base_path)
 
     # Start Flask server
     app.run(port=port)
