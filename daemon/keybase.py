@@ -70,6 +70,11 @@ class KeybaseClient:
         "Uses the Keybase command-line API to write to a file."
         self._run_cmd(['fs', 'write', path], data)
 
+    def list_dir(self, path):
+        "Uses the Keybase command-line API to list a directory's contents."
+        res = self._run_cmd(['fs', 'ls', path, '-1', '--nocolor'])
+        return res.split('\n')
+
     def _run_cmd(self, args, inp=None):
         try:
             p = subprocess.Popen(

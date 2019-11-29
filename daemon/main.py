@@ -16,9 +16,10 @@ of mappings.
 import json
 
 import click
-from flask import Flask, Response, jsonify
+from flask import Flask, jsonify
 
 from keybase import KeybaseClient
+from utils import JsonResponse
 
 # Create new Flask app
 app = Flask('paranoid-daemon')
@@ -31,7 +32,16 @@ keybase = KeybaseClient()
 @app.route('/origins', methods=['GET'])
 def get_origins():
     path = keybase.get_private('origins.json')
-    return Response(keybase.get_file(path), content_type='application/json')
+    data = json.loads(keybase.get_file(path))
+    return JsonResponse(data)
+
+
+# Fetches a list of services
+@app.route('/services', methods=['GET'])
+def get_services():
+    path = keybase.get_private('services')
+    data = keybase.list_dir(path)
+    return JsonResponse(data)
 
 
 @app.errorhandler(500)
