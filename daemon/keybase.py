@@ -17,8 +17,8 @@ class KeybaseCliException(KeybaseException):
     def __init__(self, args, returncode, stdout, stderr):
         super().__init__('"keybase {}" exited with return code {}: {}'.format(args, returncode, stderr))
         self.returncode = returncode
-        self.stdout = stdout.decode('utf-8')
-        self.stderr = stderr.decode('utf-8')
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 class KeybaseFileNotFoundException(KeybaseException):
@@ -47,6 +47,15 @@ class KeybaseClient:
     def get_public(self, path):
         return os.path.join('/keybase/public', self.get_username(), self.base_path, path)
 
+    def ensure_file(self, path, default=''):
+        "Makes sure that the given path exists as a file, otherwise writes the default data to the file."
+        try:
+            self.get_file(path)
+            return False
+        except KeybaseFileNotFoundException as e:
+            self.put_file(path, default)
+            return True
+
     def get_file(self, path):
         "Uses the Keybase command-line API to fetch a file."
         try:
@@ -57,13 +66,23 @@ class KeybaseClient:
 
             raise e
 
-    def _run_cmd(self, args):
+    def put_file(self, path, data):
+        "Uses the Keybase command-line API to write to a file."
+        self._run_cmd(['fs', 'write', path], data)
+
+    def _run_cmd(self, args, inp=None):
         try:
-            p = subprocess.Popen(['keybase'] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(
+                ['keybase'] + args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                text=True,
+            )
         except FileNotFoundError:
             raise KeybaseNotFoundException()
 
-        stdout, stderr = p.communicate()
+        stdout, stderr = p.communicate(inp)
         if p.returncode:
             raise KeybaseCliException(args, p.returncode, stdout, stderr)
 

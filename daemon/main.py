@@ -13,8 +13,10 @@ in localStorage, it can only depend on the daemon to provide secure storage
 of mappings.
 """
 
+import json
+
 import click
-from flask import Flask, jsonify
+from flask import Flask, Response, jsonify
 
 from keybase import KeybaseClient
 
@@ -29,7 +31,30 @@ keybase = KeybaseClient()
 @app.route('/origins', methods=['GET'])
 def get_origins():
     path = keybase.get_private('origins.json')
-    return keybase.get_file(path)
+    return Response(keybase.get_file(path), content_type='application/json')
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    res = {'status': 'error'}
+
+    original_exception = getattr(error, 'original_exception', None)
+    if original_exception:
+        res['error'] = str(original_exception)
+
+    return jsonify(res), 500
+
+
+def init_default_files():
+    files = {
+        'origins.json': {},
+    }
+
+    for path, data in files.items():
+        fullpath = keybase.get_private(path)
+        data = json.dumps(data)
+        if keybase.ensure_file(fullpath, data):
+            click.echo('Initialized {} on first run'.format(fullpath))
 
 
 @click.command()
@@ -43,6 +68,9 @@ def get_origins():
 def main(port, base_path):
     # Initialize Keybase client
     keybase.init(base_path=base_path)
+
+    # Initialize default files
+    init_default_files()
 
     # Start Flask server
     app.run(port=port)
