@@ -1,36 +1,21 @@
-/**
- * Storage abstractions for storing keys, data, mappings, etc.
- * For now, uses the HTML5 localStorage API, but we probably want to change this
- * because localStorage is not secure.
- */
+// TODO: Set daemon URL from settings
+const DAEMON_BASE_URL = 'http://127.0.0.1:5000';
 
 class ParanoidStorage {
-  static async addOrigin(origin) {
-    let origins = await this.getOrigins();
-    if (!origins) {
-      origins = [];
-    }
-
-    if (!origins.includes(origin)) {
-      origins.push(origin);
-      this.set('origins', origins);
-    }
-  }
-
   static async getOrigins() {
-    return await this.get('origins');
+    return await this._get('/services');
   }
 
   static async getService(origin) {
-    return await this.get(`services/${origin}`);
+    return await this._get(`services/${this.originToKey(origin)}`);
   }
 
   static async setService(origin, service) {
-    return await this.set(`services/${origin}`, service);
+    return await this._set(`services/${this.originToKey(origin)}`, service);
   }
 
   static async deleteService(origin) {
-    return await this.remove(`services/${origin}`);
+    return await this._remove(`services/${this.originToKey(origin)}`);
   }
 
   static async createService(origin) {
@@ -43,12 +28,8 @@ class ParanoidStorage {
     // Create new service
     const created = await this.setService(origin, {
       origin,
-      uids: [],
       foreign_map: {},
     });
-
-    // Create origin mapping
-    await this.addOrigin(origin);
 
     return created;
   }
@@ -59,19 +40,28 @@ class ParanoidStorage {
       throw new Error('Service does not exist');
     }
 
-    return await Promise.all(service.uids.map(uid => this.getServiceIdentity(origin, uid)));
+    return await Promise.all(
+      service.uids.map(uid => this.getServiceIdentity(origin, uid))
+    );
   }
 
   static async getServiceIdentity(origin, uid) {
-    return await this.get(`services/${origin}/identities/${uid}`);
+    return await this._get(
+      `services/${this.originToKey(origin)}/identities/${uid}`
+    );
   }
 
   static async setServiceIdentity(origin, uid, identity) {
-    return await this.set(`services/${origin}/identities/${uid}`, identity);
+    return await this._set(
+      `services/${this.originToKey(origin)}/identities/${uid}`,
+      identity
+    );
   }
 
   static async deleteServiceIdentity(origin, uid) {
-    return await this.remove(`services/${origin}/identities/${uid}`);
+    return await this._remove(
+      `services/${this.originToKey(origin)}/identities/${uid}`
+    );
   }
 
   static async createServiceIdentity(origin, uid, key) {
@@ -95,12 +85,6 @@ class ParanoidStorage {
       map: {},
     });
 
-    // Add new mapping to service
-    if (!service.uids.includes(uid)) {
-      service.uids.push(uid);
-      await this.setService(origin, service);
-    }
-
     return created;
   }
 
@@ -117,35 +101,55 @@ class ParanoidStorage {
     await this.setService(origin, service);
   }
 
-  static async get(key) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.get([key], function(items) {
-        if (chrome.runtime.lastError) {
-          resolve(undefined);
-        } else {
-          resolve(items[key]);
-        }
-      });
-    });
+  static async _get(path) {
+    const url = new URL(path, DAEMON_BASE_URL);
+    const res = await sendXHR('GET', url.href);
+    return res;
   }
 
-  static async set(key, value) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.set({ [key]: value }, function() {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError.message);
-        } else {
-          resolve(value);
-        }
-      });
-    });
+  static async _post(path, data) {
+    const url = new URL(path, DAEMON_BASE_URL);
+    const res = await sendXHR('POST', url.href, data);
+    return res;
   }
 
-  static async _getAll() {
-    return new Promise(resolve => {
-      chrome.storage.local.get(null, function(items) {
-        resolve(items);
-      });
-    });
+  static async _remove(path, data) {
+    const url = new URL(path, DAEMON_BASE_URL);
+    const res = await sendXHR('DELETE', url.href, data);
+    return res;
+  }
+
+  static originToKey(origin) {
+    const regExp = new RegExp(
+      /^(?<scheme>[a-z]+):\/\/(?<hostname>[a-z0-9]+[a-z0-9-]*(?:\.[a-z0-9-]+)*)(?::(?<port>\d+))?$/
+    );
+    if (!regExp.test(origin)) {
+      throw new Error(`${origin} is not an origin`);
+    }
+
+    const matches = origin.match(regExp);
+    if (matches === null || !('groups' in matches)) {
+      throw new Error(`${origin} is not an origin`);
+    }
+
+    let { scheme, hostname, port } = matches.groups;
+
+    // Assume well-defined scheme/port combinations
+    if (!port || port.length === 0) {
+      switch (scheme) {
+        case 'http':
+          port = '80';
+          break;
+        case 'https':
+          port = '443';
+          break;
+        default:
+          throw new Error(
+            `No port explicitly defined, no default for scheme ${scheme}`
+          );
+      }
+    }
+
+    return `${scheme}:${hostname}:${port}`;
   }
 }
