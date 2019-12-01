@@ -6,7 +6,7 @@ def JsonResponse(data=None):
         'status': 'success',
     }
 
-    if data:
+    if data is not None:
         res['data'] = data
 
     return jsonify(res)

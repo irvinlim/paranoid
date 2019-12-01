@@ -48,22 +48,28 @@ class KeybaseClient:
         return os.path.join('/keybase/public', self.get_username(), self.base_path, path)
 
     def ensure_dir(self, path):
-        "Makes sure that the given path exists as a directory\."
-        try:
-            self.stat(path)
+        "Makes sure that the given path exists as a directory."
+        if self.exists(path):
             return False
-        except KeybaseFileNotFoundException as e:
-            self.mkdir(path)
-            return True
+
+        self.mkdir(path)
+        return True
 
     def ensure_file(self, path, default=''):
         "Makes sure that the given path exists as a file, otherwise writes the default data to the file."
-        try:
-            self.get_file(path)
+        if self.exists(path):
             return False
-        except KeybaseFileNotFoundException as e:
-            self.put_file(path, default)
+
+        self.put_file(path, default)
+        return True
+
+    def exists(self, path):
+        "Returns True if the specified path exists."
+        try:
+            self.stat(path)
             return True
+        except KeybaseFileNotFoundException as e:
+            return False
 
     def get_file(self, path):
         "Uses the Keybase command-line API to fetch a file."

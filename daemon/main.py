@@ -40,6 +40,11 @@ def get_services():
 # Fetches a service by origin
 @app.route('/services/<origin>', methods=['GET'])
 def get_service(origin):
+    # Check if origin exists
+    path = keybase.get_private(os.path.join('services', origin))
+    if not keybase.exists(path):
+        return JsonResponse({})
+
     # Get info
     path = keybase.get_private(os.path.join('services', origin, 'info.json'))
     info = json.loads(keybase.get_file(path))
@@ -57,6 +62,11 @@ def get_service(origin):
 # Upserts a service by origin
 @app.route('/services/<origin>', methods=['POST'])
 def put_service(origin):
+    # Make sure path exists
+    path = keybase.get_private(os.path.join('services', origin))
+    keybase.ensure_dir(path)
+
+    # Save info
     path = keybase.get_private(os.path.join('services', origin, 'info.json'))
     keybase.put_file(path, request.data)
 
