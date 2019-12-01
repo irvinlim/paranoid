@@ -47,6 +47,15 @@ class KeybaseClient:
     def get_public(self, path):
         return os.path.join('/keybase/public', self.get_username(), self.base_path, path)
 
+    def ensure_dir(self, path):
+        "Makes sure that the given path exists as a directory\."
+        try:
+            self.stat(path)
+            return False
+        except KeybaseFileNotFoundException as e:
+            self.mkdir(path)
+            return True
+
     def ensure_file(self, path, default=''):
         "Makes sure that the given path exists as a file, otherwise writes the default data to the file."
         try:
@@ -63,17 +72,36 @@ class KeybaseClient:
         except KeybaseCliException as e:
             if 'file does not exist' in e.stderr:
                 raise KeybaseFileNotFoundException(path)
-
             raise e
 
     def put_file(self, path, data):
         "Uses the Keybase command-line API to write to a file."
         self._run_cmd(['fs', 'write', path], data)
 
+    def mkdir(self, path):
+        "Creates a new directory."
+        self._run_cmd(['fs', 'mkdir', path])
+
+    def stat(self, path):
+        "Stats a dirent."
+        try:
+            self._run_cmd(['fs', 'stat', path])
+        except KeybaseCliException as e:
+            if 'file does not exist' in e.stderr:
+                raise KeybaseFileNotFoundException(path)
+            raise e
+
     def list_dir(self, path):
         "Uses the Keybase command-line API to list a directory's contents."
-        res = self._run_cmd(['fs', 'ls', path, '-1', '--nocolor'])
-        return res.split('\n')
+        try:
+            res = self._run_cmd(['fs', 'ls', path, '-1', '--nocolor']).strip()
+            if not res:
+                return []
+            return res.split('\n')
+        except KeybaseCliException as e:
+            if 'file does not exist' in e.stderr:
+                raise KeybaseFileNotFoundException(path)
+            raise e
 
     def _run_cmd(self, args, inp=None):
         try:

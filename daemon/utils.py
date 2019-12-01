@@ -1,10 +1,12 @@
 from flask import jsonify
 
 
-def JsonResponse(data):
+def JsonResponse(data=None):
     res = {
         'status': 'success',
-        'data': data,
     }
+
+    if data:
+        res['data'] = data
 
     return jsonify(res)
