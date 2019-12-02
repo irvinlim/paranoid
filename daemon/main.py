@@ -18,12 +18,16 @@ import os
 
 import click
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from keybase import KeybaseClient
 from utils import JsonResponse
 
 # Create new Flask app
 app = Flask('paranoid-daemon')
+
+# Enable Cross-Origin Resource Sharing (CORS)
+CORS(app)
 
 # Create Keybase client
 keybase = KeybaseClient()
