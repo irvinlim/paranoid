@@ -11,7 +11,7 @@ class ParanoidStorage {
   }
 
   static async setService(origin, service) {
-    return await this._set(`services/${this.originToKey(origin)}`, service);
+    return await this._post(`services/${this.originToKey(origin)}`, service);
   }
 
   static async deleteService(origin) {
@@ -40,28 +40,19 @@ class ParanoidStorage {
       throw new Error('Service does not exist');
     }
 
-    return await Promise.all(
-      service.uids.map(uid => this.getServiceIdentity(origin, uid))
-    );
+    return await Promise.all(service.identities.map(uid => this.getServiceIdentity(origin, uid)));
   }
 
   static async getServiceIdentity(origin, uid) {
-    return await this._get(
-      `services/${this.originToKey(origin)}/identities/${uid}`
-    );
+    return await this._get(`services/${this.originToKey(origin)}/identities/${uid}`);
   }
 
   static async setServiceIdentity(origin, uid, identity) {
-    return await this._set(
-      `services/${this.originToKey(origin)}/identities/${uid}`,
-      identity
-    );
+    return await this._post(`services/${this.originToKey(origin)}/identities/${uid}`, identity);
   }
 
   static async deleteServiceIdentity(origin, uid) {
-    return await this._remove(
-      `services/${this.originToKey(origin)}/identities/${uid}`
-    );
+    return await this._remove(`services/${this.originToKey(origin)}/identities/${uid}`);
   }
 
   static async createServiceIdentity(origin, uid, key) {
@@ -109,14 +100,14 @@ class ParanoidStorage {
 
   static async _post(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
-    const res = await sendXHR('POST', url.href, data);
-    return res.data;
+    const json = JSON.stringify(data);
+    await sendXHR('POST', url.href, json);
+    return data;
   }
 
   static async _remove(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
-    const res = await sendXHR('DELETE', url.href, data);
-    return res.data;
+    await sendXHR('DELETE', url.href);
   }
 
   static originToKey(origin) {
@@ -144,9 +135,7 @@ class ParanoidStorage {
           port = '443';
           break;
         default:
-          throw new Error(
-            `No port explicitly defined, no default for scheme ${scheme}`
-          );
+          throw new Error(`No port explicitly defined, no default for scheme ${scheme}`);
       }
     }
 
