@@ -11,6 +11,18 @@ to the daemon server, so that all secrets are encrypted.
 Note that because the browser extension does not store any keys, not even
 in localStorage, it can only depend on the daemon to provide secure storage
 of mappings.
+
+---
+
+File structure:
+
+services/
+  http:google.com:80/       <-- origin name
+    info.json               <-- service metadata
+    identities/
+      100/                  <-- identity UID
+        info.json           <-- identity data: public key + field mappings
+        sharing.json        <-- sharing metadata
 """
 
 import json
@@ -22,6 +34,11 @@ from flask_cors import CORS
 
 from keybase import KeybaseClient
 from utils import JsonResponse
+
+
+class ParanoidException(Exception):
+    pass
+
 
 # Create new Flask app
 app = Flask('paranoid-daemon')
@@ -93,21 +110,39 @@ def get_service_identity(origin, uid):
     # Check if origin and identity exists
     path = keybase.get_private(os.path.join('services', origin, 'identities', uid))
     if not keybase.exists(path):
-        return JsonResponse([])
+        return JsonResponse()
 
-    # Read all fields
-    mappings = {}
-    fields = keybase.list_dir(path, filter='*.json')
-    for filename in fields:
-        field_name = filename[:-5]
-        field_path = os.path.join(path, filename)
-        data = keybase.get_file(field_path)
+    # Read service identity
+    path = keybase.get_private(os.path.join('services', origin, 'identities', uid, 'info.json'))
+    try:
+        info = json.loads(keybase.get_file(path))
+    except json.JSONDecodeError as e:
+        app.logger.info('[!] Could not decode {}: {}'.format(path, e))
+        return JsonResponse()
 
-        # Strip out metadata, extract only the value itself
-        data = json.loads(data)
-        mappings[field_name] = data.get('value')
+    return JsonResponse(info)
 
-    return JsonResponse(mappings)
+
+@app.route('/services/<origin>/identities/<uid>', methods=['POST'])
+def put_service_identity(origin, uid):
+    "Upserts an identity for a service."
+
+    # Check if origin exists
+    path = keybase.get_private(os.path.join('services', origin))
+    if not keybase.exists(path):
+        raise ParanoidException('Service does not exist for origin: {}'.format(origin))
+
+    # Create dirs for new identity
+    path = keybase.get_private(os.path.join('services', origin, 'identities'))
+    keybase.ensure_dir(path)
+    path = keybase.get_private(os.path.join('services', origin, 'identities', uid))
+    keybase.ensure_dir(path)
+
+    # Store identity metadata
+    path = keybase.get_private(os.path.join('services', origin, 'identities', uid, 'info.json'))
+    keybase.put_file(path, request.data.decode('utf-8'))
+
+    return JsonResponse()
 
 
 @app.errorhandler(500)
