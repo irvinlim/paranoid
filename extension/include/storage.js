@@ -3,7 +3,7 @@ const DAEMON_BASE_URL = 'http://127.0.0.1:5000';
 
 class ParanoidStorage {
   static async getOrigins() {
-    return await this._get('/services');
+    return await this._get('services');
   }
 
   static async getService(origin) {
@@ -104,19 +104,19 @@ class ParanoidStorage {
   static async _get(path) {
     const url = new URL(path, DAEMON_BASE_URL);
     const res = await sendXHR('GET', url.href);
-    return res;
+    return res.data;
   }
 
   static async _post(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
     const res = await sendXHR('POST', url.href, data);
-    return res;
+    return res.data;
   }
 
   static async _remove(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
     const res = await sendXHR('DELETE', url.href, data);
-    return res;
+    return res.data;
   }
 
   static originToKey(origin) {

@@ -47,7 +47,7 @@ def get_service(origin):
     # Check if origin exists
     path = keybase.get_private(os.path.join('services', origin))
     if not keybase.exists(path):
-        return JsonResponse({})
+        return JsonResponse()
 
     # Get info
     path = keybase.get_private(os.path.join('services', origin, 'info.json'))
