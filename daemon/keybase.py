@@ -1,3 +1,4 @@
+import fnmatch
 import json
 import os
 import subprocess
@@ -97,13 +98,16 @@ class KeybaseClient:
                 raise KeybaseFileNotFoundException(path)
             raise e
 
-    def list_dir(self, path):
+    def list_dir(self, path, filter=None):
         "Uses the Keybase command-line API to list a directory's contents."
         try:
             res = self._run_cmd(['fs', 'ls', path, '-1', '--nocolor']).strip()
             if not res:
                 return []
-            return res.split('\n')
+            fnames = res.split('\n')
+            if filter is not None:
+                fnames = fnmatch.filter(fnames, filter)
+            return fnames
         except KeybaseCliException as e:
             if 'file does not exist' in e.stderr:
                 raise KeybaseFileNotFoundException(path)

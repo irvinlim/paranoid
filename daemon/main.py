@@ -33,17 +33,19 @@ CORS(app)
 keybase = KeybaseClient()
 
 
-# Fetches a list of services
 @app.route('/services', methods=['GET'])
 def get_services():
+    "Fetches a list of services."
+
     path = keybase.get_private('services')
     data = keybase.list_dir(path)
     return JsonResponse(data)
 
 
-# Fetches a service by origin
 @app.route('/services/<origin>', methods=['GET'])
 def get_service(origin):
+    "Fetches a service by origin, as well as a list of identities."
+
     # Check if origin exists
     path = keybase.get_private(os.path.join('services', origin))
     if not keybase.exists(path):
@@ -51,7 +53,11 @@ def get_service(origin):
 
     # Get info
     path = keybase.get_private(os.path.join('services', origin, 'info.json'))
-    info = json.loads(keybase.get_file(path))
+    try:
+        info = json.loads(keybase.get_file(path))
+    except json.JSONDecodeError as e:
+        app.logger.info('[!] Could not decode {}: {}'.format(path, e))
+        return JsonResponse()
 
     # Get identities
     path = keybase.get_private(os.path.join('services', origin, 'identities'))
@@ -63,18 +69,45 @@ def get_service(origin):
     })
 
 
-# Upserts a service by origin
 @app.route('/services/<origin>', methods=['POST'])
 def put_service(origin):
-    # Make sure path exists
+    "Upserts a service by origin."
+
+    # Make sure paths exists
     path = keybase.get_private(os.path.join('services', origin))
+    keybase.ensure_dir(path)
+    path = keybase.get_private(os.path.join('services', origin, 'identities'))
     keybase.ensure_dir(path)
 
     # Save info
     path = keybase.get_private(os.path.join('services', origin, 'info.json'))
-    keybase.put_file(path, request.data)
+    keybase.put_file(path, request.data.decode('utf-8'))
 
     return JsonResponse()
+
+
+@app.route('/services/<origin>/identities/<uid>', methods=['GET'])
+def get_service_identity(origin, uid):
+    "Fetches a list of fields and their values for a service identity."
+
+    # Check if origin and identity exists
+    path = keybase.get_private(os.path.join('services', origin, 'identities', uid))
+    if not keybase.exists(path):
+        return JsonResponse([])
+
+    # Read all fields
+    mappings = {}
+    fields = keybase.list_dir(path, filter='*.json')
+    for filename in fields:
+        field_name = filename[:-5]
+        field_path = os.path.join(path, filename)
+        data = keybase.get_file(field_path)
+
+        # Strip out metadata, extract only the value itself
+        data = json.loads(data)
+        mappings[field_name] = data.get('value')
+
+    return JsonResponse(mappings)
 
 
 @app.errorhandler(500)
