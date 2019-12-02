@@ -20,7 +20,12 @@ async function postFormXHR(dest, data) {
     FD.append(name, data[name]);
   }
 
-  return await sendXHR('POST', dest, FD);
+  return await sendXHR('POST', dest, FD, {
+    withCredentials: true,
+    headers: {
+      'X-CSRFToken': params.get('state'),
+    },
+  });
 }
 
 function postFormForeground(dest, data) {

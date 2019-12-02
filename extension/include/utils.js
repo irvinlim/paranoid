@@ -1,4 +1,4 @@
-async function sendXHR(method, dest, data) {
+async function sendXHR(method, dest, data, options) {
   return new Promise((resolve, reject) => {
     var XHR = new XMLHttpRequest();
 
@@ -29,8 +29,24 @@ async function sendXHR(method, dest, data) {
       reject(event);
     });
 
-    // Set up our request and send data
     XHR.open(method, dest);
+
+    // Process options.
+    if (options) {
+      // Add additional headers.
+      if (options.headers) {
+        for (let header in options.headers) {
+          XHR.setRequestHeader(header, options.headers[header]);
+        }
+      }
+
+      // Determine whether to enable cross-site cookie requests.
+      if (options.withCredentials === true) {
+        XHR.withCredentials = true;
+      }
+    }
+
+    // Send data
     XHR.send(data);
   });
 }
