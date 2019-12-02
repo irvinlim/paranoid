@@ -3,7 +3,8 @@ const DAEMON_BASE_URL = 'http://127.0.0.1:5000';
 
 class ParanoidStorage {
   static async getOrigins() {
-    return await this._get('services');
+    const originKeys = await this._get('services');
+    return originKeys.map(key => this.keyToOrigin(key));
   }
 
   static async getService(origin) {
@@ -108,6 +109,23 @@ class ParanoidStorage {
   static async _remove(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
     await sendXHR('DELETE', url.href);
+  }
+
+  static keyToOrigin(key) {
+    const regExp = new RegExp(
+      /^(?<scheme>[a-z]+):(?<hostname>[a-z0-9]+[a-z0-9-]*(?:\.[a-z0-9-]+)*):(?<port>\d+)$/
+    );
+    if (!regExp.test(key)) {
+      throw new Error(`${key} is not an originKey`);
+    }
+
+    const matches = key.match(regExp);
+    if (matches === null || !('groups' in matches)) {
+      throw new Error(`${key} is not an originKey`);
+    }
+
+    const { scheme, hostname, port } = matches.groups;
+    return `${scheme}://${hostname}:${port}`;
   }
 
   static originToKey(origin) {
