@@ -106,7 +106,7 @@ class ParanoidStorage {
     return data;
   }
 
-  static async _remove(path, data) {
+  static async _remove(path) {
     const url = new URL(path, DAEMON_BASE_URL);
     await sendXHR('DELETE', url.href);
   }
