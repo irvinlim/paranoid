@@ -32,7 +32,11 @@ Example:
   {
     "key": "MIIC...",
     "fields": ["first_name", "last_name", "email"],
-    "shared_with": ["malte"]
+    "shared_fields": {
+      "first_name": ["malte"],
+      "last_name": [],
+      "email": [],
+    }
   }
   ```
 
@@ -212,7 +216,7 @@ def put_service_identity_mapping(origin, uid, field_name):
         raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
 
     # Get list of shared users for this field mapping
-    shared_users = info.get('shared_with', [])
+    shared_users = info.get('shared_fields', {}).get(field_name, [])
     if not shared_users:
         # If not currently shared with anyone, pass in own username
         shared_users = [keybase.get_username()]
