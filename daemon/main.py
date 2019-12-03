@@ -42,11 +42,11 @@ authorized to view the contents of the file.
 
 Example:
 - File path:
-  /keybase/public/irvinlim/paranoid/ids/ac9055add1d71c8523362c02ec92232c9bb0c7fe26e46a095d4d821c56b533be.json
+  /keybase/public/irvinlim/paranoid/ids/ac9055add1d71c8523362c02ec92232c9bb0c7fe26e46a095d4d821c56b533be
     (the hash is `sha256("http:google.com:80:1:first_name")`)
 - Contents:
   ```
-  Irvin
+  BEGIN KEYBASE SALTPACK ENCRYPTED MESSAGE...
   ```
 """
 
