@@ -1,3 +1,4 @@
 click
 Flask==1.1.1
 flask-cors
+pycryptodome==3.9.3

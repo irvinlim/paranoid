@@ -113,6 +113,17 @@ class KeybaseClient:
                 raise KeybaseFileNotFoundException(path)
             raise e
 
+    def encrypt(self, path, data, users):
+        "Encrypts data with per-user keys (PUKs) for the given list of users and writes it to the path."
+        self._run_cmd(['encrypt', '-o', path] + users, data)
+
+    def decrypt(self, path):
+        "Attempts to decrypt data at a path."
+        try:
+            return self._run_cmd(['decrypt', '-i', path])
+        except KeybaseCliException:
+            return None
+
     def _run_cmd(self, args, inp=None):
         try:
             p = subprocess.Popen(

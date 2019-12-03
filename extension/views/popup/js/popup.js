@@ -55,9 +55,7 @@
     const origin = e.target.getAttribute('origin');
     const uid = e.target.getAttribute('uid');
     const key = e.target.getAttribute('key');
-    const identity = await ParanoidStorage.getServiceIdentity(origin, uid);
-    identity.map[key] = newValue;
-    await ParanoidStorage.setServiceIdentity(origin, uid, identity);
+    await ParanoidStorage.setServiceIdentityMap(origin, uid, key, newValue);
   });
 })();
 

@@ -1,6 +1,10 @@
 async function approve(origin, uid, key) {
   console.log('User Approves');
 
+  // Fetch list of placeholders
+  const mapURI = origin + params.get('map_path');
+  const { placeholders } = await postFormXHR(mapURI, {});
+
   // Create service identity
   if (uid === null) {
     // Send POST request to service registration callback
@@ -10,7 +14,12 @@ async function approve(origin, uid, key) {
 
     // Initialize new service identity
     console.log(`Creating service identity with UID ${uid}`);
-    await ParanoidStorage.createServiceIdentity(origin, uid, key.getPrivateBaseKeyB64());
+    await ParanoidStorage.createServiceIdentity(
+      origin,
+      uid,
+      key.getPrivateBaseKeyB64(),
+      placeholders
+    );
   }
 
   // Fetch service identity
@@ -21,7 +30,7 @@ async function approve(origin, uid, key) {
 
   // Update placeholder map for service identity
   console.log('Updating placeholder map...');
-  await updatePlaceholderMap(identity);
+  await updatePlaceholderMap(identity, placeholders);
 
   console.log('Logging into service...');
   let loginURI = origin + params.get('login_callback');
@@ -60,19 +69,15 @@ function deny() {
 }
 
 // Fetch and update the placeholder map for a service.
-async function updatePlaceholderMap(identity) {
+async function updatePlaceholderMap(identity, placeholders) {
   const { origin, uid } = identity;
-  const mapURI = origin + params.get('map_path');
-  const { placeholders } = await postFormXHR(mapURI, {});
 
   // Initialize placeholder mappings for service.
   for (let placeholder of placeholders) {
     if (!(placeholder in identity.map)) {
-      identity.map[placeholder] = `{${placeholder}}`;
+      await ParanoidStorage.setServiceIdentityMap(origin, uid, placeholder, `{${placeholder}}`);
     }
   }
-
-  await ParanoidStorage.setServiceIdentity(identity.origin, identity.uid, identity);
 }
 
 document.addEventListener('DOMContentLoaded', async function() {

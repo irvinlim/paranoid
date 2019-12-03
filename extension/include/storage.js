@@ -41,7 +41,7 @@ class ParanoidStorage {
       throw new Error('Service does not exist');
     }
 
-    return await Promise.all(service.identities.map(uid => this.getServiceIdentity(origin, uid)));
+    return await Promise.all(service.uids.map(uid => this.getServiceIdentity(origin, uid)));
   }
 
   static async getServiceIdentity(origin, uid) {
@@ -56,7 +56,11 @@ class ParanoidStorage {
     return await this._remove(`services/${this.originToKey(origin)}/identities/${uid}`);
   }
 
-  static async createServiceIdentity(origin, uid, key) {
+  static async createServiceIdentity(origin, uid, key, fields) {
+    if (!origin || !uid) {
+      throw new Error(`Origin and uid are required: origin=${origin} uid=${uid}`);
+    }
+
     // Ensure service exists
     const service = await this.getService(origin);
     if (!service) {
@@ -74,10 +78,17 @@ class ParanoidStorage {
       origin,
       uid,
       key,
-      map: {},
+      fields,
     });
 
     return created;
+  }
+
+  static async setServiceIdentityMap(origin, uid, map_key, map_value) {
+    return await this._postString(
+      `services/${this.originToKey(origin)}/identities/${uid}/${map_key}`,
+      map_value
+    );
   }
 
   static async setServiceForeignMap(origin, foreign_uid, map_key, map_value) {
@@ -103,6 +114,12 @@ class ParanoidStorage {
     const url = new URL(path, DAEMON_BASE_URL);
     const json = JSON.stringify(data);
     await sendXHR('POST', url.href, json);
+    return data;
+  }
+
+  static async _postString(path, data) {
+    const url = new URL(path, DAEMON_BASE_URL);
+    await sendXHR('POST', url.href, data);
     return data;
   }
 
