@@ -91,6 +91,18 @@ require_token(app)
 keybase = KeybaseClient()
 
 
+@app.route('/')
+def index():
+    "Simple index route for healthchecks."
+    return JsonResponse()
+
+
+@app.route('/auth')
+def auth():
+    "Simple index route for testing the authorization token."
+    return JsonResponse()
+
+
 @app.route('/services', methods=['GET'])
 def get_services():
     "Fetches a list of services."

@@ -25,7 +25,7 @@ async function sendXHR(method, dest, data, options) {
 
     // Define what happens in case of error
     XHR.addEventListener('error', function(event) {
-      console.error('Oops! Something went wrong: ' + dest);
+      // console.error('Oops! Something went wrong: ' + dest);
       reject(event);
     });
 

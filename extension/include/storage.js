@@ -1,7 +1,27 @@
 // TODO: Set daemon URL from settings
 const DAEMON_BASE_URL = 'http://127.0.0.1:5000';
 
+const SESSION_TOKEN_KEY = 'session_token';
+
 class ParanoidStorage {
+  static async checkAlive() {
+    try {
+      await this._get('/');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  static async checkToken() {
+    try {
+      await this._get('/auth');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   static async getOrigins() {
     const originKeys = await this._get('services');
     return originKeys.map(key => this.keyToOrigin(key));
@@ -105,13 +125,24 @@ class ParanoidStorage {
   }
 
   static async getSessionToken() {
-    const key = 'session_token';
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get([key], function(items) {
+      chrome.storage.local.get([SESSION_TOKEN_KEY], function(items) {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
-          resolve(items[key]);
+          resolve(items[SESSION_TOKEN_KEY]);
+        }
+      });
+    });
+  }
+
+  static async setSessionToken(token) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.set({ [SESSION_TOKEN_KEY]: token }, function(items) {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
         }
       });
     });

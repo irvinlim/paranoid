@@ -1,4 +1,57 @@
 (async () => {
+  const alive = await ParanoidStorage.checkAlive();
+  const authorized = await ParanoidStorage.checkToken();
+
+  // Display daemon status in settings
+  await prepareSettingsTab(alive, authorized);
+
+  // Populate services if authorized
+  if (alive && authorized) {
+    await prepareServicesTab();
+  }
+})();
+
+async function prepareSettingsTab(alive, authorized) {
+  async function updateDaemonStatus(alive, authorized) {
+    if (typeof alive === 'undefined') {
+      alive = await ParanoidStorage.checkAlive();
+    }
+    if (typeof authorized === 'undefined') {
+      authorized = await ParanoidStorage.checkToken();
+    }
+
+    const el = document.querySelector('#daemon-status');
+    el.innerHTML = 'checking...';
+    el.className = '';
+
+    if (!alive) {
+      el.innerHTML = 'not running';
+      el.classList.add('text-error');
+    } else if (!authorized) {
+      el.innerHTML = 'incorrect token';
+      el.classList.add('text-warning');
+    } else {
+      el.innerHTML = 'running';
+      el.classList.add('text-success');
+    }
+  }
+
+  // Update daemon status
+  await updateDaemonStatus(alive, authorized);
+
+  // Set session token via textbox
+  const input = document.querySelector('#session-token-input');
+  input.value = await ParanoidStorage.getSessionToken();
+  input.addEventListener('change', async function(e) {
+    // Save to localStorage.
+    await ParanoidStorage.setSessionToken(e.target.value);
+
+    // Recheck daemon status.
+    await updateDaemonStatus();
+  });
+}
+
+async function prepareServicesTab() {
   const origins = await ParanoidStorage.getOrigins();
 
   const accordian = document.getElementById('accordionExample');
@@ -57,7 +110,7 @@
     const key = e.target.getAttribute('key');
     await ParanoidStorage.setServiceIdentityMap(origin, uid, key, newValue);
   });
-})();
+}
 
 function getKeyValueHTML(identity) {
   let html = '';

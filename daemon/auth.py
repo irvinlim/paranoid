@@ -13,6 +13,11 @@ def get_token():
 def check_token():
     "Checks whether the request contains the Authorization header with the correct token."
 
+    # Exclude specific routes from authorization checks.
+    if request.path == '/':
+        return None
+
+    # Perform authorization checks on all other routes.
     authorization = request.headers.get('Authorization')
     if not authorization or not secrets.compare_digest(authorization, get_token()):
         return jsonify({'status': 'unauthorized'}), 403
