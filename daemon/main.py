@@ -69,6 +69,7 @@ import click
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from auth import get_token, require_token
 from keybase import KeybaseClient
 from utils import JsonResponse, get_field_hash
 
@@ -82,6 +83,9 @@ app = Flask('paranoid-daemon')
 
 # Enable Cross-Origin Resource Sharing (CORS)
 CORS(app)
+
+# Registers all routes to require an authorization session token
+require_token(app)
 
 # Create Keybase client
 keybase = KeybaseClient()
@@ -285,6 +289,9 @@ def init_default_files():
     'files will be located in /keybase/private/<username>/paranoid.',
 )
 def main(port, base_path):
+    # Print session token
+    print(' * Session token generated (paste into browser extension settings):\n\n{}\n'.format(get_token()))
+
     # Initialize Keybase client
     keybase.init(base_path=base_path)
 

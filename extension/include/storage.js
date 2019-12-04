@@ -104,9 +104,26 @@ class ParanoidStorage {
     await this.setService(origin, service);
   }
 
+  static async getSessionToken() {
+    const key = 'session_token';
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get([key], function(items) {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(items[key]);
+        }
+      });
+    });
+  }
+
   static async _get(path) {
     const url = new URL(path, DAEMON_BASE_URL);
-    const res = await sendXHR('GET', url.href);
+    const res = await sendXHR('GET', url.href, null, {
+      headers: {
+        Authorization: await this.getSessionToken(),
+      },
+    });
     return res.data;
   }
 
@@ -115,6 +132,7 @@ class ParanoidStorage {
     const json = JSON.stringify(data);
     await sendXHR('POST', url.href, json, {
       headers: {
+        Authorization: await this.getSessionToken(),
         'Content-Type': 'application/json',
       },
     });
@@ -123,13 +141,21 @@ class ParanoidStorage {
 
   static async _post(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
-    await sendXHR('POST', url.href, data);
+    await sendXHR('POST', url.href, data, null, {
+      headers: {
+        Authorization: await this.getSessionToken(),
+      },
+    });
     return data;
   }
 
   static async _remove(path) {
     const url = new URL(path, DAEMON_BASE_URL);
-    await sendXHR('DELETE', url.href);
+    await sendXHR('DELETE', url.href, null, {
+      headers: {
+        Authorization: await this.getSessionToken(),
+      },
+    });
   }
 
   static keyToOrigin(key) {
