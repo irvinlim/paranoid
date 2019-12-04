@@ -1,7 +1,5 @@
-// TODO: Set daemon URL from settings
-const DAEMON_BASE_URL = 'http://127.0.0.1:5000';
-
 const SESSION_TOKEN_KEY = 'session_token';
+const DAEMON_URL_KEY = 'daemon_url';
 
 class ParanoidStorage {
   static async checkAlive() {
@@ -124,21 +122,21 @@ class ParanoidStorage {
     await this.setService(origin, service);
   }
 
-  static async getSessionToken() {
+  static async getLocal(key) {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get([SESSION_TOKEN_KEY], function(items) {
+      chrome.storage.local.get([key], function(items) {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
-          resolve(items[SESSION_TOKEN_KEY]);
+          resolve(items[key]);
         }
       });
     });
   }
 
-  static async setSessionToken(token) {
+  static async setLocal(key, value) {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.set({ [SESSION_TOKEN_KEY]: token }, function(items) {
+      chrome.storage.local.set({ [key]: value }, function(items) {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
@@ -148,8 +146,24 @@ class ParanoidStorage {
     });
   }
 
+  static async getDaemonURL() {
+    return await this.getLocal(DAEMON_URL_KEY);
+  }
+
+  static async setDaemonURL(url) {
+    return await this.setLocal(DAEMON_URL_KEY, url);
+  }
+
+  static async getSessionToken() {
+    return await this.getLocal(SESSION_TOKEN_KEY);
+  }
+
+  static async setSessionToken(token) {
+    return await this.setLocal(SESSION_TOKEN_KEY, token);
+  }
+
   static async _get(path) {
-    const url = new URL(path, DAEMON_BASE_URL);
+    const url = new URL(path, await this.getDaemonURL());
     const res = await sendXHR('GET', url.href, null, {
       headers: {
         Authorization: await this.getSessionToken(),
@@ -159,7 +173,7 @@ class ParanoidStorage {
   }
 
   static async _postJSON(path, data) {
-    const url = new URL(path, DAEMON_BASE_URL);
+    const url = new URL(path, await this.getDaemonURL());
     const json = JSON.stringify(data);
     await sendXHR('POST', url.href, json, {
       headers: {
@@ -171,7 +185,7 @@ class ParanoidStorage {
   }
 
   static async _post(path, data) {
-    const url = new URL(path, DAEMON_BASE_URL);
+    const url = new URL(path, await this.getDaemonURL());
     await sendXHR('POST', url.href, data, null, {
       headers: {
         Authorization: await this.getSessionToken(),
@@ -181,7 +195,7 @@ class ParanoidStorage {
   }
 
   static async _remove(path) {
-    const url = new URL(path, DAEMON_BASE_URL);
+    const url = new URL(path, await this.getDaemonURL());
     await sendXHR('DELETE', url.href, null, {
       headers: {
         Authorization: await this.getSessionToken(),

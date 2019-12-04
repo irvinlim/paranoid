@@ -3,7 +3,7 @@
   const authorized = await ParanoidStorage.checkToken();
 
   // Display daemon status in settings
-  await prepareSettingsTab(alive, authorized);
+  await prepareSettingsTab();
 
   // Populate services if authorized
   if (alive && authorized) {
@@ -11,14 +11,10 @@
   }
 })();
 
-async function prepareSettingsTab(alive, authorized) {
-  async function updateDaemonStatus(alive, authorized) {
-    if (typeof alive === 'undefined') {
-      alive = await ParanoidStorage.checkAlive();
-    }
-    if (typeof authorized === 'undefined') {
-      authorized = await ParanoidStorage.checkToken();
-    }
+async function prepareSettingsTab() {
+  async function updateDaemonStatus() {
+    const alive = await ParanoidStorage.checkAlive();
+    const authorized = await ParanoidStorage.checkToken();
 
     const el = document.querySelector('#daemon-status');
     el.innerHTML = 'checking...';
@@ -37,12 +33,23 @@ async function prepareSettingsTab(alive, authorized) {
   }
 
   // Update daemon status
-  await updateDaemonStatus(alive, authorized);
+  await updateDaemonStatus();
+
+  // Set daemon URL via textbox
+  const daemonURLInput = document.querySelector('#daemon-url-input');
+  daemonURLInput.value = (await ParanoidStorage.getDaemonURL()) || '';
+  daemonURLInput.addEventListener('change', async function(e) {
+    // Save to localStorage.
+    await ParanoidStorage.setDaemonURL(e.target.value);
+
+    // Recheck daemon status.
+    await updateDaemonStatus();
+  });
 
   // Set session token via textbox
-  const input = document.querySelector('#session-token-input');
-  input.value = await ParanoidStorage.getSessionToken();
-  input.addEventListener('change', async function(e) {
+  const sessionTokenInput = document.querySelector('#session-token-input');
+  sessionTokenInput.value = (await ParanoidStorage.getSessionToken()) || '';
+  sessionTokenInput.addEventListener('change', async function(e) {
     // Save to localStorage.
     await ParanoidStorage.setSessionToken(e.target.value);
 
