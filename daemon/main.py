@@ -11,55 +11,6 @@ to the daemon server, so that all secrets are encrypted.
 Note that because the browser extension does not store any keys, not even
 in localStorage, it can only depend on the daemon to provide secure storage
 of mappings.
-
----
-
-File structure for privately stored metadata is stored in /keybase/private, where
-all files are encrypted as well as signed.
-
-Example:
-- File path:
-  /keybase/private/irvinlim/paranoid/services/http:google.com:80/info.json (origin name)
-- Contents:
-  ```
-  {"origin": "http://google.com:80"}
-  ```
-
-- File path:
-  /keybase/private/irvinlim/paranoid/services/http:google.com:80/uids/1.json (service identity UID)
-- Contents:
-  ```
-  {
-    "key": "MIIC...",
-    "fields": {
-      "first_name": {
-        "shared_with": ["malte"],
-        "type": "str"
-      },
-      "last_name": {
-        "shared_with": [],
-        "type": "str"
-      },
-      "email": {
-        "shared_with": [],
-        "type": "str"
-      },
-    }
-  }
-  ```
-
-File structure for (shared) identities is stored in /keybase/public, where files are only
-signed by default. However, we enforce files to be encrypted for only the users who are
-authorized to view the contents of the file.
-
-Example:
-- File path:
-  /keybase/public/irvinlim/paranoid/ids/ac9055add1d71c8523362c02ec92232c9bb0c7fe26e46a095d4d821c56b533be
-    (the hash is `sha256("http:google.com:80:1:first_name")`)
-- Contents:
-  ```
-  BEGIN KEYBASE SALTPACK ENCRYPTED MESSAGE...
-  ```
 """
 
 import json
@@ -71,12 +22,8 @@ from flask_cors import CORS
 
 from auth import get_token, require_token
 from keybase import KeybaseClient
-from utils import JsonResponse, get_field_hash
-
-
-class ParanoidException(Exception):
-    pass
-
+from paranoid import ParanoidException, ParanoidManager
+from utils import JsonResponse
 
 # Create new Flask app
 app = Flask('paranoid-daemon')
@@ -86,6 +33,9 @@ CORS(app)
 
 # Create Keybase client
 keybase = KeybaseClient()
+
+# Create Paranoid manager
+paranoid = ParanoidManager(keybase)
 
 
 @app.route('/')
@@ -104,30 +54,22 @@ def auth():
 def get_services():
     "Fetches a list of services."
 
-    path = keybase.get_private('services')
-    data = keybase.list_dir(path)
-    return JsonResponse(data)
+    origins = paranoid.get_origins()
+    return JsonResponse(origins)
 
 
 @app.route('/services/<origin>', methods=['GET'])
 def get_service(origin):
     "Fetches a service by origin, as well as a list of UIDs (corresponding to unique identities)."
 
-    # Check if origin exists
-    path = keybase.get_private(os.path.join('services', origin))
-    if not keybase.exists(path):
+    service = paranoid.get_service(origin)
+    if not service:
         return JsonResponse()
 
-    # Get info
-    path = keybase.get_private(os.path.join('services', origin, 'info.json'))
-    info = keybase.get_json(path)
-
-    # Get identities
-    path = keybase.get_private(os.path.join('services', origin, 'uids'))
-    uids = [uid[:-5] for uid in keybase.list_dir(path, '*.json')]
+    uids = paranoid.get_service_uids(origin)
 
     return JsonResponse({
-        'info': info,
+        'info': service,
         'uids': uids,
     })
 
@@ -136,15 +78,8 @@ def get_service(origin):
 def put_service(origin):
     "Upserts a service by origin."
 
-    # Make sure paths exists
-    path = keybase.get_private(os.path.join('services', origin))
-    keybase.ensure_dir(path)
-    path = keybase.get_private(os.path.join('services', origin, 'uids'))
-    keybase.ensure_dir(path)
-
-    # Save info
-    path = keybase.get_private(os.path.join('services', origin, 'info.json'))
-    keybase.put_file(path, request.data.decode('utf-8'))
+    data = request.get_json()
+    paranoid.set_service(origin, data)
 
     return JsonResponse()
 
@@ -153,30 +88,17 @@ def put_service(origin):
 def get_service_identity(origin, uid):
     "Fetches a list of fields and their values for a service identity."
 
-    # Check if origin and identity exists
-    path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
-    if not keybase.exists(path):
+    # Read service identity
+    info = paranoid.get_service_identity(origin, uid)
+    if info is None:
         return JsonResponse()
-
-    # Read service identity metadata
-    info = keybase.get_json(path)
 
     # Read individual service identity field mappings
     info['map'] = {}
     for field in info.get('fields'):
-        # Construct field tuple <origin, uid, field_name>
-        field_tuple = (origin, uid, field)
-
-        # Look in public folder for field value
-        field_hash = get_field_hash(field_tuple)
-        path = keybase.get_public(os.path.join('ids', field_hash))
-        if not keybase.exists(path):
-            continue
-
-        # Attempt to decrypt the data
-        data = keybase.decrypt(path)
-
-        info['map'][field] = data
+        data = paranoid.decrypt_data_file(origin, uid, field)
+        if data is not None:
+            info['map'][field] = data
 
     return JsonResponse(info)
 
@@ -185,18 +107,13 @@ def get_service_identity(origin, uid):
 def put_service_identity(origin, uid):
     "Inserts an identity for a service."
 
-    # Check if origin exists
-    path = keybase.get_private(os.path.join('services', origin))
-    if not keybase.exists(path):
+    # Get service
+    service = paranoid.get_service(origin)
+    if service is None:
         raise ParanoidException('Service does not exist for origin: {}'.format(origin))
 
-    # Ensure parent directory exists
-    path = keybase.get_private(os.path.join('services', origin, 'uids'))
-    keybase.ensure_dir(path)
-
-    # Check that the service identity does not already exist
-    path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
-    if keybase.exists(path):
+    # Make sure that service identity doesn't already exist
+    if paranoid.get_service_identity(origin, uid) is not None:
         raise ParanoidException('Service identity already exists for {}:{}'.format(origin, uid))
 
     # Decode request data as JSON
@@ -211,7 +128,7 @@ def put_service_identity(origin, uid):
 
     # Prepare identity metadata object
     info = {
-        'origin': origin,
+        'origin': service.get('origin'),
         'uid': uid,
         'key': key,
         'fields': {},
@@ -223,7 +140,7 @@ def put_service_identity(origin, uid):
         }
 
     # Store identity metadata
-    keybase.put_file(path, json.dumps(info))
+    paranoid.set_service_identity(origin, uid, info)
 
     return JsonResponse()
 
@@ -232,32 +149,19 @@ def put_service_identity(origin, uid):
 def put_service_identity_mapping(origin, uid, field_name):
     "Updates an identity mapping for a service."
 
-    # Check if origin and identity exists
-    path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
-    if not keybase.exists(path):
+    # Read service identity
+    info = paranoid.get_service_identity(origin, uid)
+    if info is None:
         raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
 
-    # Read service identity metadata
-    info = keybase.get_json(path)
-
-    # Only store mapping for a valid field name
-    fields = info.get('fields')
-    if field_name not in fields:
-        raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
+    # Validate field name
+    paranoid.validate_field_name(info, field_name)
 
     # Get list of shared users for this field mapping
-    shared_users = fields[field_name].get('shared_with', [])
-    if not shared_users:
-        # If not currently shared with anyone, pass in own username to avoid error
-        shared_users = [keybase.get_username()]
+    shared_users = info['fields'][field_name].get('shared_with', [])
 
-    # Construct field tuple <origin, uid, field_name>
-    field_tuple = (origin, uid, field_name)
-
-    # Write to the file encrypted for the list of users
-    field_hash = get_field_hash(field_tuple)
-    path = keybase.get_public(os.path.join('ids', field_hash))
-    keybase.encrypt(path, request.data.decode('utf-8'), shared_users)
+    # Encrypt the data file with the list of shared users
+    paranoid.encrypt_data_file(origin, uid, field_name, request.data.decode('utf-8'), shared_users)
 
     return JsonResponse()
 
@@ -266,21 +170,16 @@ def put_service_identity_mapping(origin, uid, field_name):
 def share_service_identity_mapping(origin, uid, field_name, username):
     "Shares a field with a Keybase user."
 
-    # Check if origin and identity exists
-    info_path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
-    if not keybase.exists(info_path):
+    # Read service identity
+    info = paranoid.get_service_identity(origin, uid)
+    if info is None:
         raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
 
-    # Read service identity metadata
-    info = keybase.get_json(info_path)
-
-    # Only store mapping for a valid field name
-    fields = info.get('fields')
-    if field_name not in fields:
-        raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
+    # Validate field name
+    paranoid.validate_field_name(info, field_name)
 
     # Get list of shared users for this field mapping
-    shared_users = fields[field_name].get('shared_with', [])
+    shared_users = info['fields'][field_name].get('shared_with', [])
 
     # Make sure username is not already shared with
     if username in shared_users:
@@ -290,11 +189,11 @@ def share_service_identity_mapping(origin, uid, field_name, username):
     shared_users.append(username)
 
     # Re-encrypt the file with the new list of shared users
-    reencrypt_data_file(origin, uid, field_name, shared_users)
+    paranoid.reencrypt_data_file(origin, uid, field_name, shared_users)
 
     # If there is no error, update the identity metadata
     info['fields'][field_name]['shared_with'] = shared_users
-    keybase.put_file(info_path, json.dumps(info))
+    paranoid.set_service_identity(origin, uid, info)
 
     return JsonResponse()
 
@@ -303,21 +202,16 @@ def share_service_identity_mapping(origin, uid, field_name, username):
 def unshare_service_identity_mapping(origin, uid, field_name, username):
     "Unshares a field with a Keybase user."
 
-    # Check if origin and identity exists
-    path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
-    if not keybase.exists(path):
+    # Read service identity
+    info = paranoid.get_service_identity(origin, uid)
+    if info is None:
         raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
 
-    # Read service identity metadata
-    info = keybase.get_json(path)
-
-    # Only store mapping for a valid field name
-    fields = info.get('fields')
-    if field_name not in fields:
-        raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
+    # Validate field name
+    paranoid.validate_field_name(info, field_name)
 
     # Get list of shared users for this field mapping
-    shared_users = fields[field_name].get('shared_with', [])
+    shared_users = info['fields'][field_name].get('shared_with', [])
 
     # Make sure username is shared with
     if username not in shared_users:
@@ -325,34 +219,15 @@ def unshare_service_identity_mapping(origin, uid, field_name, username):
 
     # Remove username from list of shared users
     shared_users.remove(username)
-    if not shared_users:
-        shared_users.append(keybase.get_username())
 
     # Re-encrypt the file with the new list of shared users
-    reencrypt_data_file(origin, uid, field_name, shared_users)
+    paranoid.reencrypt_data_file(origin, uid, field_name, shared_users)
 
     # If there is no error, update the identity metadata
     info['fields'][field_name]['shared_with'] = shared_users
-    keybase.put_file(path, json.dumps(info))
+    paranoid.set_service_identity(origin, uid, info)
 
     return JsonResponse()
-
-
-def reencrypt_data_file(origin, uid, field_name, shared_users):
-    "Re-encrypts a data file with a new list of shared users."
-
-    # Construct field tuple <origin, uid, field_name>
-    field_tuple = (origin, uid, field_name)
-    field_hash = get_field_hash(field_tuple)
-
-    # Make sure data file exists
-    data_path = keybase.get_public(os.path.join('ids', field_hash))
-    if not keybase.exists(data_path):
-        raise ParanoidException('Could not locate data file for {}:{}:{}'.format(origin, uid, field_name))
-
-    # Re-encrypt the file with the new list of shared users
-    data = keybase.decrypt(data_path)
-    keybase.encrypt(data_path, data, shared_users)
 
 
 @app.errorhandler(500)
