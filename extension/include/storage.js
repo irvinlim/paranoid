@@ -186,7 +186,7 @@ class ParanoidStorage {
 
   static async _post(path, data) {
     const url = new URL(path, await this.getDaemonURL());
-    await sendXHR('POST', url.href, data, null, {
+    await sendXHR('POST', url.href, data, {
       headers: {
         Authorization: await this.getSessionToken(),
       },
