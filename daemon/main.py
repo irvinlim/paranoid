@@ -175,8 +175,6 @@ def get_service_identity(origin, uid):
 
         # Attempt to decrypt the data
         data = keybase.decrypt(path)
-        if not data:
-            continue
 
         info['map'][field] = data
 
@@ -262,6 +260,97 @@ def put_service_identity_mapping(origin, uid, field_name):
     keybase.encrypt(path, request.data.decode('utf-8'), shared_users)
 
     return JsonResponse()
+
+
+@app.route('/services/<origin>/identities/<uid>/<field_name>/share/<username>', methods=['POST'])
+def share_service_identity_mapping(origin, uid, field_name, username):
+    "Shares a field with a Keybase user."
+
+    # Check if origin and identity exists
+    info_path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
+    if not keybase.exists(info_path):
+        raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
+
+    # Read service identity metadata
+    info = keybase.get_json(info_path)
+
+    # Only store mapping for a valid field name
+    fields = info.get('fields')
+    if field_name not in fields:
+        raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
+
+    # Get list of shared users for this field mapping
+    shared_users = fields[field_name].get('shared_with', [])
+
+    # Make sure username is not already shared with
+    if username in shared_users:
+        raise ParanoidException('"{}" already has access to {}:{}'.format(username, origin, uid))
+
+    # Add username to list of shared users
+    shared_users.append(username)
+
+    # Re-encrypt the file with the new list of shared users
+    reencrypt_data_file(origin, uid, field_name, shared_users)
+
+    # If there is no error, update the identity metadata
+    info['fields'][field_name]['shared_with'] = shared_users
+    keybase.put_file(info_path, json.dumps(info))
+
+    return JsonResponse()
+
+
+@app.route('/services/<origin>/identities/<uid>/<field_name>/share/<username>', methods=['DELETE'])
+def unshare_service_identity_mapping(origin, uid, field_name, username):
+    "Unshares a field with a Keybase user."
+
+    # Check if origin and identity exists
+    path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
+    if not keybase.exists(path):
+        raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
+
+    # Read service identity metadata
+    info = keybase.get_json(path)
+
+    # Only store mapping for a valid field name
+    fields = info.get('fields')
+    if field_name not in fields:
+        raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
+
+    # Get list of shared users for this field mapping
+    shared_users = fields[field_name].get('shared_with', [])
+
+    # Make sure username is shared with
+    if username not in shared_users:
+        raise ParanoidException('"{}" did not have access to {}:{}'.format(username, origin, uid))
+
+    # Remove username from list of shared users
+    shared_users.remove(username)
+
+    # Re-encrypt the file with the new list of shared users
+    reencrypt_data_file(origin, uid, field_name, shared_users)
+
+    # If there is no error, update the identity metadata
+    info['fields'][field_name]['shared_with'] = shared_users
+    keybase.put_file(path, json.dumps(info))
+
+    return JsonResponse()
+
+
+def reencrypt_data_file(origin, uid, field_name, shared_users):
+    "Re-encrypts a data file with a new list of shared users."
+
+    # Construct field tuple <origin, uid, field_name>
+    field_tuple = (origin, uid, field_name)
+    field_hash = get_field_hash(field_tuple)
+
+    # Make sure data file exists
+    data_path = keybase.get_public(os.path.join('ids', field_hash))
+    if not keybase.exists(data_path):
+        raise ParanoidException('Could not locate data file for {}:{}:{}'.format(origin, uid, field_name))
+
+    # Re-encrypt the file with the new list of shared users
+    data = keybase.decrypt(data_path)
+    keybase.encrypt(data_path, data, shared_users)
 
 
 @app.errorhandler(500)
