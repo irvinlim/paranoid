@@ -84,9 +84,6 @@ app = Flask('paranoid-daemon')
 # Enable Cross-Origin Resource Sharing (CORS)
 CORS(app)
 
-# Registers all routes to require an authorization session token
-require_token(app)
-
 # Create Keybase client
 keybase = KeybaseClient()
 
@@ -300,9 +297,22 @@ def init_default_files():
     help='Base path to look up Paranoid files. Defaults to "paranoid", which means that '
     'files will be located in /keybase/private/<username>/paranoid.',
 )
-def main(port, base_path):
-    # Print session token
-    print(' * Session token generated (paste into browser extension settings):\n\n{}\n'.format(get_token()))
+@click.option(
+    '--disable-auth',
+    is_flag=True,
+    default=False,
+    help='Disables authentication for development. This is insecure and opens up secrets to be leaked via CSRF!',
+)
+def main(port, base_path, disable_auth):
+    if disable_auth:
+        click.secho(' * Authentication disabled for server.')
+        click.secho('   WARNING: This opens up the server to be vulnerable to CSRF, which could leak secrets to other sites.', fg='red')
+    else:
+        # Registers all routes to require an authorization session token
+        require_token(app)
+
+        # Print session token
+        print(' * Session token generated (paste into browser extension settings):\n\n{}\n'.format(get_token()))
 
     # Initialize Keybase client
     keybase.init(base_path=base_path)
