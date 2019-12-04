@@ -81,6 +81,10 @@ class KeybaseClient:
                 raise KeybaseFileNotFoundException(path)
             raise e
 
+    def get_json(self, path):
+        "Uses the Keybase command-line API to fetch and parse a JSON file."
+        return json.loads(self.get_file(path))
+
     def put_file(self, path, data):
         "Uses the Keybase command-line API to write to a file."
         self._run_cmd(['fs', 'write', path], data)

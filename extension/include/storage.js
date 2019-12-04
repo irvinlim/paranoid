@@ -12,7 +12,7 @@ class ParanoidStorage {
   }
 
   static async setService(origin, service) {
-    return await this._post(`services/${this.originToKey(origin)}`, service);
+    return await this._postJSON(`services/${this.originToKey(origin)}`, service);
   }
 
   static async deleteService(origin) {
@@ -49,7 +49,7 @@ class ParanoidStorage {
   }
 
   static async setServiceIdentity(origin, uid, identity) {
-    return await this._post(`services/${this.originToKey(origin)}/identities/${uid}`, identity);
+    return await this._postJSON(`services/${this.originToKey(origin)}/identities/${uid}`, identity);
   }
 
   static async deleteServiceIdentity(origin, uid) {
@@ -85,7 +85,7 @@ class ParanoidStorage {
   }
 
   static async setServiceIdentityMap(origin, uid, map_key, map_value) {
-    return await this._postString(
+    return await this._post(
       `services/${this.originToKey(origin)}/identities/${uid}/${map_key}`,
       map_value
     );
@@ -110,14 +110,18 @@ class ParanoidStorage {
     return res.data;
   }
 
-  static async _post(path, data) {
+  static async _postJSON(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
     const json = JSON.stringify(data);
-    await sendXHR('POST', url.href, json);
+    await sendXHR('POST', url.href, json, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return data;
   }
 
-  static async _postString(path, data) {
+  static async _post(path, data) {
     const url = new URL(path, DAEMON_BASE_URL);
     await sendXHR('POST', url.href, data);
     return data;

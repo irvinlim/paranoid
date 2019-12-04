@@ -31,11 +31,19 @@ Example:
   ```
   {
     "key": "MIIC...",
-    "fields": ["first_name", "last_name", "email"],
-    "shared_fields": {
-      "first_name": ["malte"],
-      "last_name": [],
-      "email": [],
+    "fields": {
+      "first_name": {
+        "shared_with": ["malte"],
+        "type": "str"
+      },
+      "last_name": {
+        "shared_with": [],
+        "type": "str"
+      },
+      "email": {
+        "shared_with": [],
+        "type": "str"
+      },
     }
   }
   ```
@@ -69,14 +77,6 @@ class ParanoidException(Exception):
     pass
 
 
-def get_json(path):
-    try:
-        return json.loads(keybase.get_file(path))
-    except json.JSONDecodeError as e:
-        app.logger.info('[!] Could not decode {}: {}'.format(path, e))
-        return None
-
-
 # Create new Flask app
 app = Flask('paranoid-daemon')
 
@@ -107,9 +107,7 @@ def get_service(origin):
 
     # Get info
     path = keybase.get_private(os.path.join('services', origin, 'info.json'))
-    info = get_json(path)
-    if not info:
-        return JsonResponse()
+    info = keybase.get_json(path)
 
     # Get identities
     path = keybase.get_private(os.path.join('services', origin, 'uids'))
@@ -148,9 +146,7 @@ def get_service_identity(origin, uid):
         return JsonResponse()
 
     # Read service identity metadata
-    info = get_json(path)
-    if not info:
-        return JsonResponse()
+    info = keybase.get_json(path)
 
     # Read individual service identity field mappings
     info['map'] = {}
@@ -168,6 +164,7 @@ def get_service_identity(origin, uid):
         data = keybase.decrypt(path)
         if not data:
             continue
+
         info['map'][field] = data
 
     return JsonResponse(info)
@@ -175,31 +172,54 @@ def get_service_identity(origin, uid):
 
 @app.route('/services/<origin>/identities/<uid>', methods=['POST'])
 def put_service_identity(origin, uid):
-    "Upserts an identity for a service."
-
-    # Decode request data as JSON
-    data = request.data.decode('utf-8')
-    data = json.loads(data)
+    "Inserts an identity for a service."
 
     # Check if origin exists
     path = keybase.get_private(os.path.join('services', origin))
     if not keybase.exists(path):
         raise ParanoidException('Service does not exist for origin: {}'.format(origin))
 
-    # Create private dirs for new identity
+    # Ensure parent directory exists
     path = keybase.get_private(os.path.join('services', origin, 'uids'))
     keybase.ensure_dir(path)
 
-    # Store identity metadata
+    # Check that the service identity does not already exist
     path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
-    keybase.put_file(path, json.dumps(data))
+    if keybase.exists(path):
+        raise ParanoidException('Service identity already exists for {}:{}'.format(origin, uid))
+
+    # Decode request data as JSON
+    data = request.get_json()
+    key = data.get('key')
+    field_names = data.get('fields')
+
+    if not key:
+        raise ParanoidException('Service identity key not specified')
+    if not field_names:
+        raise ParanoidException('Service identity fields not specified')
+
+    # Prepare identity metadata object
+    info = {
+        'origin': origin,
+        'uid': uid,
+        'key': key,
+        'fields': {},
+    }
+    for field_name in field_names:
+        info['fields'][field_name] = {
+            'type': 'str',
+            'shared_with': [],
+        }
+
+    # Store identity metadata
+    keybase.put_file(path, json.dumps(info))
 
     return JsonResponse()
 
 
 @app.route('/services/<origin>/identities/<uid>/<field_name>', methods=['POST'])
 def put_service_identity_mapping(origin, uid, field_name):
-    "Upserts an identity mapping for a service."
+    "Updates an identity mapping for a service."
 
     # Check if origin and identity exists
     path = keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
@@ -207,18 +227,17 @@ def put_service_identity_mapping(origin, uid, field_name):
         raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
 
     # Read service identity metadata
-    info = get_json(path)
-    if not info:
-        raise ParanoidException('Service identity does not exist for {}:{}'.format(origin, uid))
+    info = keybase.get_json(path)
 
     # Only store mapping for a valid field name
-    if field_name not in info.get('fields'):
+    fields = info.get('fields')
+    if field_name not in fields:
         raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
 
     # Get list of shared users for this field mapping
-    shared_users = info.get('shared_fields', {}).get(field_name, [])
+    shared_users = fields[field_name].get('shared_with', [])
     if not shared_users:
-        # If not currently shared with anyone, pass in own username
+        # If not currently shared with anyone, pass in own username to avoid error
         shared_users = [keybase.get_username()]
 
     # Construct field tuple <origin, uid, field_name>

@@ -13,16 +13,18 @@
 
   const tags = document.getElementsByTagName('paranoid');
   for (let tag of tags) {
-    const uid = parseInt(tag.getAttribute('uid'));
+    const uid = tag.getAttribute('uid');
     const attribute = tag.getAttribute('attribute');
 
     for (let identity of identities) {
-      if (uid === identity.uid || uid in service.foreign_map) {
+      const identityUid = identity.uid.toString();
+
+      if (uid === identityUid || uid in service.info.foreign_map) {
         let unmasked_data = '';
-        if (uid === identity.uid) {
+        if (uid === identityUid) {
           unmasked_data = identity.map[attribute];
         } else {
-          unmasked_data = service.foreign_map[uid][attribute];
+          unmasked_data = service.info.foreign_map[uid][attribute];
         }
 
         // Clear placeholder contents and append span element to house shadow root
