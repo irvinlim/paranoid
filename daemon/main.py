@@ -325,6 +325,8 @@ def unshare_service_identity_mapping(origin, uid, field_name, username):
 
     # Remove username from list of shared users
     shared_users.remove(username)
+    if not shared_users:
+        shared_users.append(keybase.get_username())
 
     # Re-encrypt the file with the new list of shared users
     reencrypt_data_file(origin, uid, field_name, shared_users)
