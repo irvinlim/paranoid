@@ -115,7 +115,12 @@ async function prepareServicesTab() {
     const origin = e.target.getAttribute('origin');
     const uid = e.target.getAttribute('uid');
     const key = e.target.getAttribute('key');
-    await ParanoidStorage.setServiceIdentityMap(origin, uid, key, newValue);
+    await ParanoidStorage.setServiceIdentityMap(
+      ParanoidStorage.keyToOrigin(origin),
+      uid,
+      key,
+      newValue
+    );
   });
 }
 
