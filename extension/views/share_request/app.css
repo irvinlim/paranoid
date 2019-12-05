@@ -1,0 +1,48 @@
+body {
+    background-color: #f5f5f5;
+}
+
+button.btn {
+    margin: 10px auto;
+    padding: 15px 30px;
+    border: 0;
+    border-radius: 5px;
+    outline: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    display: block;
+    cursor: pointer;
+}
+
+button.btn:hover {
+    opacity: 0.9;
+}
+
+button.approve {
+    background-color: limegreen;
+}
+
+button.deny {
+    background-color: firebrick;
+}
+
+
+main {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 30px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.user-avatar {
+    display: block;
+    border-radius: 50%;
+    margin: 0 auto;
+}

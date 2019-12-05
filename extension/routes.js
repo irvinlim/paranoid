@@ -37,6 +37,8 @@ function handleRoute(route) {
   switch (route.path) {
     case 'authenticate':
       return true;
+    case 'share_request':
+      return true;
     default:
       return false;
   }

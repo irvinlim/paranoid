@@ -14,9 +14,18 @@ async function sendXHR(method, dest, data, options) {
       const json = JSON.parse(event.target.response);
 
       // Check if response was successful, if a status field is returned.
-      if ('status' in json && json.status !== 'success') {
-        reject(new Error('Request not sucessful: ' + json));
-        return;
+      if ('status' in json) {
+        // Daemon API request uses strings for status
+        if (typeof json.status === 'string' && json.status !== 'success') {
+          reject(new Error('Request not sucessful: ' + json));
+          return;
+        }
+
+        // Keybase API uses objects for status
+        if (typeof json.status === 'object' && json.status.code !== 0) {
+          reject(new Error('Request not sucessful: ' + json));
+          return;
+        }
       }
 
       // Resolve with parsed JSON object.
