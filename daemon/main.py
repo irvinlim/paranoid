@@ -73,12 +73,29 @@ def get_service(origin):
         'uids': uids,
     })
 
+
 @app.route('/services/<origin>/foreign_map', methods=['GET'])
 def get_service_foreign_map(origin):
     "Fetches a foreign map for a service."
 
     foreign_map = paranoid.resolve_foreign_map(origin)
     return JsonResponse(foreign_map)
+
+
+@app.route('/services/<origin>/foreign_map/<uid>/<field_name>/<username>', methods=['POST'])
+def add_foreign_map(origin, uid, field_name, username):
+    "Adds a foreign map mapping for an origin."
+
+    paranoid.add_foreign_map(origin, uid, field_name, username)
+    return JsonResponse()
+
+
+@app.route('/services/<origin>/foreign_map', methods=['DELETE'])
+def remove_foreign_map(origin, uid, field_name, username):
+    "Deletes a foreign map mapping for an origin."
+
+    paranoid.remove_foreign_map(origin, uid, field_name, username)
+    return JsonResponse()
 
 
 @app.route('/services/<origin>', methods=['POST'])

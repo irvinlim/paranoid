@@ -113,6 +113,18 @@ class ParanoidStorage {
     return await this._get(`services/${this.originToKey(origin)}/foreign_map`);
   }
 
+  static async addServiceForeignMap(origin, uid, field_name, username) {
+    return await this._post(
+      `services/${this.originToKey(origin)}/foreign_map/${uid}/${field_name}/${username}`
+    );
+  }
+
+  static async removeServiceForeignMap(origin, uid, field_name, username) {
+    return await this._remove(
+      `services/${this.originToKey(origin)}/foreign_map/${uid}/${field_name}/${username}`
+    );
+  }
+
   static async getLocal(key) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.get([key], function(items) {
