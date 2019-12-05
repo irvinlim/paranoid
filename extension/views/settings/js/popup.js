@@ -24,12 +24,11 @@ async function prepareSettingsTab() {
 
     if (!alive) {
       text.innerHTML = 'Not running';
-      text.classList.add('text-error');
+      text.classList.add('text-danger');
       box.classList.remove('alert-secondary');
-      box.classList.add('alert-error');
+      box.classList.add('alert-danger');
     } else if (!authorized) {
       text.innerHTML = 'Incorrect token';
-      text.classList.add('text-warning');
       box.classList.remove('alert-secondary');
       box.classList.add('alert-warning');
     } else {
