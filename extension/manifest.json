@@ -1,8 +1,12 @@
 {
-  "name": "Paranoid ID Manager",
-  "description": "ID manager helper for Paranoid",
+  "name": "Paranoid",
+  "description": "Regain control of your personal data once again.",
   "version": "1.0",
   "manifest_version": 2,
+  "homepage_url": "https://github.com/irvinlim/paranoid",
+  "icons": {
+    "128": "res/icon.png"
+  },
   "incognito": "split",
   "background": {
     "scripts": ["background.js"],
