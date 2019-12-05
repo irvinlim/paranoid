@@ -8,7 +8,7 @@ img.img-center {
     max-width: 100%;
 }
 
-button.btn {
+.btn {
     margin: 10px auto;
     padding: 15px 30px;
     border: 0;
@@ -19,17 +19,23 @@ button.btn {
     color: white;
     display: block;
     cursor: pointer;
+    background-color: #666666;
 }
 
-button.btn:hover {
+a.btn {
+    width: fit-content;
+    text-decoration: none;
+}
+
+.btn:hover {
     opacity: 0.9;
 }
 
-button.approve {
+.btn.approve {
     background-color: limegreen;
 }
 
-button.deny {
+.btn.deny {
     background-color: firebrick;
 }
 

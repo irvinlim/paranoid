@@ -6,3 +6,8 @@ navigator.registerProtocolHandler(
   `chrome-extension://${chrome.runtime.id}/routes.html?q=%s`,
   'Paranoid protocol handler'
 );
+
+// Set settings link href.
+document
+  .querySelector('.settings-link')
+  .setAttribute('href', `chrome-extension://${chrome.runtime.id}/views/settings/index.html`);
