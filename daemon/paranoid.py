@@ -73,6 +73,7 @@ from urllib.parse import urlencode
 from Crypto.Hash import SHA256
 
 from keybase import KeybaseClient
+from cache import ParanoidCache
 
 
 class ParanoidException(Exception):
@@ -82,6 +83,7 @@ class ParanoidException(Exception):
 class ParanoidManager():
     def __init__(self, keybase: KeybaseClient):
         self.keybase = keybase
+        self.cache = ParanoidCache()
 
     def init(self, disable_chat=False):
         self.disable_chat = disable_chat
@@ -89,26 +91,41 @@ class ParanoidManager():
     def get_origins(self) -> List[str]:
         "Returns a list of origins."
 
-        path = self.keybase.get_private('services')
+        # Check if cache hit
+        data, cache_hit = self.cache.get_origins()
+        if not cache_hit:
+            path = self.keybase.get_private('services')
 
-        # Convert origin filenames to origin keys
-        origins = [ParanoidManager.origin_filename_to_key(filename) for filename in self.keybase.list_dir(path)]
+            # Convert origin filenames to origin keys
+            data = [ParanoidManager.origin_filename_to_key(filename) for filename in self.keybase.list_dir(path)]
 
-        return origins
+            #Update cache
+            self.cache.add_origins(data)
+
+        return data
 
     def get_service(self, origin):
         "Returns a service."
 
-        # Check if origin and service exists
-        path = self.get_service_path(origin)
-        if not self.keybase.exists(path):
-            return None
-        path = self.get_service_path(origin, 'info.json')
-        if not self.keybase.exists(path):
-            return None
+        # Check if cache hit
+        data, cache_hit = self.cache.get_service(origin)
+        if not cache_hit:
+            # Check if origin and service exists
+            path = self.get_service_path(origin)
+            if not self.keybase.exists(path):
+                return None
 
-        # Get info
-        return self.keybase.get_json(path)
+            path = self.get_service_path(origin, 'info.json')
+            if not self.keybase.exists(path):
+                return None
+
+            # Get info
+            data = self.keybase.get_json(path)
+
+            #Update cache
+            self.cache.set_service(origin, data)
+
+        return data
 
     def set_service(self, origin, service):
         "Updates a service."
@@ -123,28 +140,47 @@ class ParanoidManager():
         path = self.get_service_path(origin, 'info.json')
         self.keybase.put_file(path, json.dumps(service))
 
+        # Update Cache
+        self.cache.set_service(origin, json.dumps(service))
+
     def get_service_uids(self, origin) -> List[str]:
         "Returns a list of UIDs corresponding to all identities for a service."
 
-        # Check if origin exists
-        path = self.get_service_path(origin)
-        if not self.keybase.exists(path):
-            return []
+        # Check if cache hit
+        data, cache_hit = self.cache.get_service_uids(origin)
+        if not cache_hit:
+            # Check if origin exists
+            path = self.get_service_path(origin)
+            if not self.keybase.exists(path):
+                return []
 
-        # Get identities
-        path = self.get_service_path(origin, 'uids')
-        return [uid[:-5] for uid in self.keybase.list_dir(path, '*.json')]
+            # Get identities
+            path = self.get_service_path(origin, 'uids')
+            data = [uid[:-5] for uid in self.keybase.list_dir(path, '*.json')]
+
+            #Update cache 
+            self.cache.add_service_uids(origin, data)
+
+        return data 
 
     def get_service_identity(self, origin, uid):
         "Returns a service identity."
 
-        # Check if origin and identity exists
-        path = self.get_service_path(origin, os.path.join('uids', '{}.json'.format(uid)))
-        if not self.keybase.exists(path):
-            return None
+        # Check if cache hit
+        data, cache_hit = self.cache.get_service_identity(origin, uid)
+        if not cache_hit:
+            # Check if origin and identity exists
+            path = self.get_service_path(origin, os.path.join('uids', '{}.json'.format(uid)))
+            if not self.keybase.exists(path):
+                return None
 
-        # Read service identity metadata
-        return self.keybase.get_json(path)
+            # Read service identity metadata
+            data = self.keybase.get_json(path)
+
+            #Update cache 
+            self.cache.set_service_identity(origin, uid, data)
+
+        return data
 
     def set_service_identity(self, origin, uid, identity):
         "Updates a service identity."
@@ -162,16 +198,27 @@ class ParanoidManager():
         path = self.get_service_path(origin, os.path.join('uids', '{}.json'.format(uid)))
         return self.keybase.put_file(path, json.dumps(identity))
 
+        # Update Cache
+        self.cache.set_service_identity(origin, uid, json.dumps(identity))
+
     def get_foreign_map(self, origin):
         "Returns the unresolved foreign map for a given origin."
 
-        # Check if path exists
-        path = self.get_service_path(origin, 'foreign_map.json')
-        if not self.keybase.exists(path):
-            return None
+        # Check if cache hit
+        data, cache_hit = self.cache.get_foreign_map(origin)
+        if not cache_hit:
+            # Check if path exists
+            path = self.get_service_path(origin, 'foreign_map.json')
+            if not self.keybase.exists(path):
+                return None
 
-        # Read all mappings for origin
-        return self.keybase.get_json(path)
+            # Read all mappings for origin
+            data = self.keybase.get_json(path)
+
+            #Update cache 
+            self.cache.set_foreign_map(origin, data)
+
+        return data
 
     def set_foreign_map(self, origin, foreign_map):
         "Returns the unresolved foreign map for a given origin."
@@ -182,7 +229,12 @@ class ParanoidManager():
 
         # Save foreign map
         path = self.get_service_path(origin, 'foreign_map.json')
-        return self.keybase.put_file(path, json.dumps(foreign_map))
+        data = self.keybase.put_file(path, json.dumps(foreign_map))
+
+        #Update cache 
+        self.cache.set_foreign_map(origin, data)
+
+        return data
 
     def resolve_foreign_map(self, origin) -> List[Dict[str, str]]:
         "Returns a list of resolved foreign mappings for a given origin."
@@ -301,17 +353,25 @@ class ParanoidManager():
     def decrypt_data_file(self, origin, uid, field_name, username=None):
         "Decrypts a data file."
 
-        # Construct field tuple <origin, uid, field_name>
-        field_tuple = (origin, uid, field_name)
-        field_hash = self.get_field_hash(field_tuple)
+        # Check if cache hit
+        data, cache_hit = self.cache.decrypt_data_file(origin, uid, field_name)
+        if not cache_hit:
+            # Construct field tuple <origin, uid, field_name>
+            field_tuple = (origin, uid, field_name)
+            field_hash = self.get_field_hash(field_tuple)
 
-        # Check if data file exists
-        data_path = self.keybase.get_public(os.path.join('ids', field_hash), username=username)
-        if not self.keybase.exists(data_path):
-            return None
+            # Check if data file exists
+            data_path = self.keybase.get_public(os.path.join('ids', field_hash), username=username)
+            if not self.keybase.exists(data_path):
+                return None
 
-        # Attempt to decrypt the data file
-        return self.keybase.decrypt(data_path)
+            # Attempt to decrypt the data file
+            data = self.keybase.decrypt(data_path)
+
+            #Update cache
+            self.cache.encrypt_data_file(origin, uid, field_name, data)
+
+        return data
 
     def encrypt_data_file(self, origin, uid, field_name, data, shared_users):
         "Encrypts a data file with a new list of shared users."
@@ -327,6 +387,9 @@ class ParanoidManager():
         # Write to the file encrypted for the list of users
         path = self.keybase.get_public(os.path.join('ids', field_hash))
         self.keybase.encrypt(path, data, shared_users)
+
+        #Update cache
+        self.cache.encrypt_data_file(origin, uid, field_name, data)
 
     def reencrypt_data_file(self, origin, uid, field_name, shared_users):
         "Re-encrypts a data file with a new list of shared users."
