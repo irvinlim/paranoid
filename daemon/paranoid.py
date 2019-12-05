@@ -86,16 +86,20 @@ class ParanoidManager():
         "Returns a list of origins."
 
         path = self.keybase.get_private('services')
-        return self.keybase.list_dir(path)
+
+        # Convert origin filenames to origin keys
+        origins = [ParanoidManager.origin_filename_to_key(filename) for filename in self.keybase.list_dir(path)]
+
+        return origins
 
     def get_service(self, origin):
         "Returns a service."
 
         # Check if origin and service exists
-        path = self.keybase.get_private(os.path.join('services', origin))
+        path = self.get_service_path(origin)
         if not self.keybase.exists(path):
             return None
-        path = self.keybase.get_private(os.path.join('services', origin, 'info.json'))
+        path = self.get_service_path(origin, 'info.json')
         if not self.keybase.exists(path):
             return None
 
@@ -106,32 +110,32 @@ class ParanoidManager():
         "Updates a service."
 
         # Make sure that paths exist
-        path = self.keybase.get_private(os.path.join('services', origin))
+        path = self.get_service_path(origin)
         self.keybase.ensure_dir(path)
-        path = self.keybase.get_private(os.path.join('services', origin, 'uids'))
+        path = self.get_service_path(origin, 'uids')
         self.keybase.ensure_dir(path)
 
         # Save info
-        path = self.keybase.get_private(os.path.join('services', origin, 'info.json'))
+        path = self.get_service_path(origin, 'info.json')
         self.keybase.put_file(path, json.dumps(service))
 
     def get_service_uids(self, origin) -> List[str]:
         "Returns a list of UIDs corresponding to all identities for a service."
 
         # Check if origin exists
-        path = self.keybase.get_private(os.path.join('services', origin))
+        path = self.get_service_path(origin)
         if not self.keybase.exists(path):
             return []
 
         # Get identities
-        path = self.keybase.get_private(os.path.join('services', origin, 'uids'))
+        path = self.get_service_path(origin, 'uids')
         return [uid[:-5] for uid in self.keybase.list_dir(path, '*.json')]
 
     def get_service_identity(self, origin, uid):
         "Returns a service identity."
 
         # Check if origin and identity exists
-        path = self.keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
+        path = self.get_service_path(origin, os.path.join('uids', '{}.json'.format(uid)))
         if not self.keybase.exists(path):
             return None
 
@@ -147,18 +151,18 @@ class ParanoidManager():
             raise ParanoidException('Service does not exist for origin: {}'.format(origin))
 
         # Ensure parent directory exists
-        path = self.keybase.get_private(os.path.join('services', origin, 'uids'))
+        path = self.get_service_path(origin, 'uids')
         self.keybase.ensure_dir(path)
 
         # Save service identity
-        path = self.keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
+        path = self.get_service_path(origin, os.path.join('uids', '{}.json'.format(uid)))
         return self.keybase.put_file(path, json.dumps(identity))
 
     def get_foreign_map(self, origin):
         "Returns the unresolved foreign map for a given origin."
 
         # Check if path exists
-        path = self.keybase.get_private(os.path.join('services', origin, 'foreign_map.json'))
+        path = self.get_service_path(origin, 'foreign_map.json')
         if not self.keybase.exists(path):
             return None
 
@@ -169,11 +173,11 @@ class ParanoidManager():
         "Returns the unresolved foreign map for a given origin."
 
         # Ensure that origin path exists
-        path = self.keybase.get_private(os.path.join('services', origin))
+        path = self.get_service_path(origin)
         self.keybase.ensure_dir(path)
 
         # Save foreign map
-        path = self.keybase.get_private(os.path.join('services', origin, 'foreign_map.json'))
+        path = self.get_service_path(origin, 'foreign_map.json')
         return self.keybase.put_file(path, json.dumps(foreign_map))
 
     def resolve_foreign_map(self, origin) -> List[Dict[str, str]]:
@@ -338,3 +342,22 @@ class ParanoidManager():
         key = '{}:{}:{}'.format(origin, uid, field_name)
         h.update(key.encode('utf-8'))
         return h.digest().hex()
+
+    def get_service_path(self, origin: str, path: str = '') -> str:
+        "Returns the path relative to a service. This method converts the origin key to a origin filename format."
+        filename = ParanoidManager.origin_key_to_filename(origin)
+        return self.keybase.get_private(os.path.join('services', filename, path))
+
+    @staticmethod
+    def origin_filename_to_key(filename: str):
+        "Converts origin filenames to the format expected by the client."
+        return filename.replace('@', ':')
+
+    @staticmethod
+    def origin_key_to_filename(key: str):
+        """
+        Converts origin keys to filenames that can be saved on all platforms.
+        Notably windows prevents colons in filenames, so we use '@' symbols instead,
+        which is not a valid character in origins either.
+        """
+        return key.replace(':', '@')
