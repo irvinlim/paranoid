@@ -23,6 +23,7 @@ from flask_cors import CORS
 from auth import get_token, require_token
 from keybase import KeybaseClient
 from paranoid import ParanoidException, ParanoidManager
+from cache import ParanoidCache
 from utils import JsonResponse
 
 # Create new Flask app
@@ -34,8 +35,11 @@ CORS(app)
 # Create Keybase client
 keybase = KeybaseClient()
 
+# Create Paranoid cache
+cache = ParanoidCache()
+
 # Create Paranoid manager
-paranoid = ParanoidManager(keybase)
+paranoid = ParanoidManager(keybase, cache)
 
 
 @app.route('/')
@@ -325,6 +329,9 @@ def main(port, base_path, disable_auth, disable_chat):
 
     # Initialize Paranoid manager
     paranoid.init(disable_chat=disable_chat)
+
+    # Prefetch Paranoid services
+    paranoid.prefetch()
 
     # Initialize default files
     init_default_files()

@@ -81,12 +81,26 @@ class ParanoidException(Exception):
 
 
 class ParanoidManager():
-    def __init__(self, keybase: KeybaseClient):
+    def __init__(self, keybase: KeybaseClient, cache: ParanoidCache):
         self.keybase = keybase
-        self.cache = ParanoidCache()
+        self.cache = cache
 
     def init(self, disable_chat=False):
         self.disable_chat = disable_chat
+    
+    def prefetch(self):
+        print("Populating cache...")
+        origins = self.get_origins()
+        for origin in origins:
+            self.get_service(origin)
+            self.get_foreign_map(origin)
+            uids = self.get_service_uids(origin)
+            for uid in uids:
+                info = self.get_service_identity(origin, uid)
+                for field in info.get('fields'):
+                    self.decrypt_data_file(origin, uid, field)
+        print("Paranoid daemon is ready")
+
 
     def get_origins(self) -> List[str]:
         "Returns a list of origins."
