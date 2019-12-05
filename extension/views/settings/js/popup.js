@@ -103,7 +103,7 @@ async function prepareServicesTab() {
         '<table class="table">' +
         '<thead class="thead-light">' +
         '<tr>' +
-        '<th scope="col">Placeholder Key</th>' +
+        '<th scope="col">Field Name</th>' +
         '<th scope="col">Value</th>' +
         '</tr>' +
         '</thead>' +
@@ -129,6 +129,8 @@ async function prepareServicesTab() {
     const key = e.target.getAttribute('key');
     await ParanoidStorage.setServiceIdentityMap(origin, uid, key, newValue);
   });
+
+  $('#services-loading').remove();
 }
 
 function getKeyValueHTML(identity) {
