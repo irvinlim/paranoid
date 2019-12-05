@@ -94,7 +94,7 @@ class ParanoidCache:
         if origin not in self.cache['uid_list']:
             self.cache['uid_list'][origin] = []
         for uid in uid_list:
-            if uid not in self.cache['uid_list']:
+            if uid not in self.cache['uid_list'][origin]:
                 self.cache['uid_list'][origin].append(uid)
 
     def set_service_identity(self, origin, uid, identity_json):
