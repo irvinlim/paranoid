@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 from functools import lru_cache
+import platform
 
 
 class KeybaseException(Exception):
@@ -43,12 +44,16 @@ class KeybaseClient:
         return user.get('username')
 
     def get_private(self, path):
-        return os.path.join('/keybase/private', self.get_username(), self.base_path, path)
+        if platform.system() == 'Windows':
+            return 'K:' + os.path.join('\private', self.get_username(), self.base_path, path).replace(':', '@')
+        return os.path.join('/keybase/private', self.get_username(), self.base_path, path).replace(':', '@')
 
     def get_public(self, path, username=None):
         if username is None:
             username = self.get_username()
-        return os.path.join('/keybase/public', username, self.base_path, path)
+        if platform.system() == 'Windows':
+            return 'K:' + os.path.join('\public', username, self.base_path, path).replace(':', '@')
+        return os.path.join('/keybase/public', username, self.base_path, path).replace(':', '@')
 
     def ensure_dir(self, path):
         "Makes sure that the given path exists as a directory."
@@ -104,10 +109,16 @@ class KeybaseClient:
                 raise KeybaseFileNotFoundException(path)
             if "doesn't exist" in e.stderr:  # dir not found
                 raise KeybaseFileNotFoundException(path)
+            if 'The system cannot find the file specified.' in e.stderr: #windows file not found
+                raise KeybaseFileNotFoundException(path)
+            if 'The parameter is incorrect.' in e.stderr: #windows dir not found
+                raise KeybaseFileNotFoundException(path)
             raise e
 
     def list_dir(self, path, filter=None):
         "Uses the Keybase command-line API to list a directory's contents."
+        if platform.system() == 'Windows':
+            path = '\keybase' + path[2:]
         try:
             res = self._run_cmd(['fs', 'ls', path, '-1', '--nocolor']).strip()
             if not res:
