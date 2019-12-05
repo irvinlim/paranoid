@@ -141,6 +141,10 @@ class KeybaseClient:
         except KeybaseCliException:
             return None
 
+    def send_chat(self, user, message):
+        "Sends a markdown-enabled private chat message to a user."
+        return self._run_cmd(['chat', 'send', '--private', '{},{}'.format(user, self.get_username()), message])
+
     def _run_cmd(self, args, inp=None):
         try:
             p = subprocess.Popen(

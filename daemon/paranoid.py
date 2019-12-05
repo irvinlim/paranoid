@@ -68,6 +68,7 @@ Example:
 import json
 import os
 from typing import Dict, List
+from urllib.parse import urlencode
 
 from Crypto.Hash import SHA256
 
@@ -347,6 +348,30 @@ class ParanoidManager():
         "Returns the path relative to a service. This method converts the origin key to a origin filename format."
         filename = ParanoidManager.origin_key_to_filename(origin)
         return self.keybase.get_private(os.path.join('services', filename, path))
+
+    def send_share_request(self, origin, uid, field_name, username):
+        "Sends a share request via Keybase chat."
+
+        # Create share request URL query string
+        query = urlencode({
+            'origin': origin,
+            'uid': uid,
+            'field_name': field_name,
+            'username': self.keybase.get_username(),
+        })
+
+        # Create message text
+        text = """Hi @{}, I would like to share my information with you on Paranoid! :ghost:
+
+Please copy and paste the following URL into your Paranoid-enabled browser to accept my share request, thank you! :smile:
+
+```
+web+paranoid://share_request?{}
+```
+""".format(username, query)
+
+        # Send chat message
+        self.keybase.send_chat(username, text)
 
     @staticmethod
     def origin_filename_to_key(filename: str):

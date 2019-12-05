@@ -194,6 +194,11 @@ def put_service_identity_mapping(origin, uid, field_name):
 def share_service_identity_mapping(origin, uid, field_name, username):
     "Shares a field with a Keybase user."
 
+    # Read service
+    service = paranoid.get_service(origin)
+    if service is None:
+        raise ParanoidException('Service does not exist for origin {}'.format(origin))
+
     # Read service identity
     info = paranoid.get_service_identity(origin, uid)
     if info is None:
@@ -218,6 +223,11 @@ def share_service_identity_mapping(origin, uid, field_name, username):
     # If there is no error, update the identity metadata
     info['fields'][field_name]['shared_with'] = shared_users
     paranoid.set_service_identity(origin, uid, info)
+
+    # Send a share request.
+    # We send the full origin (stored in the service) instead of the origin key.
+    full_origin = service.get('origin')
+    paranoid.send_share_request(full_origin, uid, field_name, username)
 
     return JsonResponse()
 
