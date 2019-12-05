@@ -16,6 +16,19 @@ Example:
   ```
 
 - File path:
+  /keybase/private/irvinlim/paranoid/services/http:google.com:80/foreign_map.json (origin name)
+- Contents:
+  ```
+  [
+    {
+      "username": "brandontjs",
+      "uid": "1",
+      "field_name": "first_name"
+    }
+  ]
+  ```
+
+- File path:
   /keybase/private/irvinlim/paranoid/services/http:google.com:80/uids/1.json (service identity UID)
 - Contents:
   ```
@@ -54,7 +67,7 @@ Example:
 
 import json
 import os
-from typing import List
+from typing import Dict, List
 
 from Crypto.Hash import SHA256
 
@@ -78,13 +91,15 @@ class ParanoidManager():
     def get_service(self, origin):
         "Returns a service."
 
-        # Check if origin exists
+        # Check if origin and service exists
         path = self.keybase.get_private(os.path.join('services', origin))
+        if not self.keybase.exists(path):
+            return None
+        path = self.keybase.get_private(os.path.join('services', origin, 'info.json'))
         if not self.keybase.exists(path):
             return None
 
         # Get info
-        path = self.keybase.get_private(os.path.join('services', origin, 'info.json'))
         return self.keybase.get_json(path)
 
     def set_service(self, origin, service):
@@ -139,6 +154,133 @@ class ParanoidManager():
         path = self.keybase.get_private(os.path.join('services', origin, 'uids', '{}.json'.format(uid)))
         return self.keybase.put_file(path, json.dumps(identity))
 
+    def get_foreign_map(self, origin):
+        "Returns the unresolved foreign map for a given origin."
+
+        # Check if path exists
+        path = self.keybase.get_private(os.path.join('services', origin, 'foreign_map.json'))
+        if not self.keybase.exists(path):
+            return None
+
+        # Read all mappings for origin
+        return self.keybase.get_json(path)
+
+    def set_foreign_map(self, origin, foreign_map):
+        "Returns the unresolved foreign map for a given origin."
+
+        # Ensure that origin path exists
+        path = self.keybase.get_private(os.path.join('services', origin))
+        self.keybase.ensure_dir(path)
+
+        # Save foreign map
+        path = self.keybase.get_private(os.path.join('services', origin, 'foreign_map.json'))
+        return self.keybase.put_file(path, json.dumps(foreign_map))
+
+    def resolve_foreign_map(self, origin) -> List[Dict[str, str]]:
+        "Returns a list of resolved foreign mappings for a given origin."
+
+        # Read all mappings for origin
+        foreign_map = self.get_foreign_map(origin)
+        if foreign_map is None:
+            return {}
+
+        # Resolve each mapping
+        resolved = {}
+        for mapping in foreign_map:
+            username = mapping.get('username')
+            uid = mapping.get('uid')
+            field_name = mapping.get('field_name')
+
+            if not username or not uid or not field_name:
+                continue
+
+            # Attempt to decrypt the data file
+            value = self.decrypt_data_file(origin, uid, field_name, username=username)
+            if value is None:
+                continue
+
+            # Store resolved value in mapping
+            if uid not in resolved:
+                resolved[uid] = {}
+            resolved[uid][field_name] = value
+
+        return resolved
+
+    def add_foreign_map(self, origin, uid, field_name, username):
+        "Adds a new foreign map for a given origin."
+
+        # Get existing foreign map
+        foreign_map = self.get_foreign_map(origin)
+        if foreign_map is None:
+            foreign_map = []
+
+        # Check if <uid, field_name, username> already exists in foreign map,
+        # at the same time clean up any invalid entries
+        new_map = []
+        for mapping in foreign_map:
+            map_username = mapping.get('username')
+            map_uid = mapping.get('uid')
+            map_field_name = mapping.get('field_name')
+
+            if not map_username or not map_uid or not map_field_name:
+                continue
+
+            if map_username == username and map_uid == uid and map_field_name == field_name:
+                raise ParanoidException('Mapping already exists for ({}, {}, {})'.format(uid, field_name, username))
+
+            new_map.append({
+                'username': map_username,
+                'uid': map_uid,
+                'field_name': map_field_name,
+            })
+
+        # Finally add the mapping
+        new_map.append({
+            'username': username,
+            'uid': uid,
+            'field_name': field_name,
+        })
+
+        # Write the mapping to file
+        return self.set_foreign_map(origin, new_map)
+
+    def remove_foreign_map(self, origin, uid, field_name, username):
+        "Removes a new foreign map for a given origin."
+
+        # Get existing foreign map
+        foreign_map = self.get_foreign_map(origin)
+        if foreign_map is None:
+            raise ParanoidException('Foreign map does not exist for origin: {}'.format(origin))
+
+        # Check if <uid, field_name, username> already exists in foreign map,
+        # at the same time clean up any invalid entries
+        found = False
+        new_map = []
+        for mapping in foreign_map:
+            map_username = mapping.get('username')
+            map_uid = mapping.get('uid')
+            map_field_name = mapping.get('field_name')
+
+            if not map_username or not map_uid or not map_field_name:
+                continue
+
+            if map_username == username and map_uid == uid and map_field_name == field_name:
+                found = True
+                continue
+
+            new_map.append({
+                'username': map_username,
+                'uid': map_uid,
+                'field_name': map_field_name,
+            })
+
+        # If mapping was not found, throw an error
+        if not found:
+            raise ParanoidException('Mapping does not exist for ({}, {}, {})'.format(uid, field_name, username))
+
+        # Write the mapping to file
+        return self.set_foreign_map(origin, new_map)
+
     def validate_field_name(self, identity, field_name):
         "Validates a field name for a service identity."
 
@@ -148,7 +290,7 @@ class ParanoidManager():
         if field_name not in fields:
             raise ParanoidException('"{}" is not a valid field name for service identity'.format(field_name))
 
-    def decrypt_data_file(self, origin, uid, field_name):
+    def decrypt_data_file(self, origin, uid, field_name, username=None):
         "Decrypts a data file."
 
         # Construct field tuple <origin, uid, field_name>
@@ -156,7 +298,7 @@ class ParanoidManager():
         field_hash = self.get_field_hash(field_tuple)
 
         # Check if data file exists
-        data_path = self.keybase.get_public(os.path.join('ids', field_hash))
+        data_path = self.keybase.get_public(os.path.join('ids', field_hash), username=username)
         if not self.keybase.exists(data_path):
             return None
 

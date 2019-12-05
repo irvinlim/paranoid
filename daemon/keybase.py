@@ -45,8 +45,10 @@ class KeybaseClient:
     def get_private(self, path):
         return os.path.join('/keybase/private', self.get_username(), self.base_path, path)
 
-    def get_public(self, path):
-        return os.path.join('/keybase/public', self.get_username(), self.base_path, path)
+    def get_public(self, path, username=None):
+        if username is None:
+            username = self.get_username()
+        return os.path.join('/keybase/public', username, self.base_path, path)
 
     def ensure_dir(self, path):
         "Makes sure that the given path exists as a directory."
@@ -98,7 +100,9 @@ class KeybaseClient:
         try:
             self._run_cmd(['fs', 'stat', path])
         except KeybaseCliException as e:
-            if 'file does not exist' in e.stderr:
+            if 'file does not exist' in e.stderr:  # file not found
+                raise KeybaseFileNotFoundException(path)
+            if "doesn't exist" in e.stderr:  # dir not found
                 raise KeybaseFileNotFoundException(path)
             raise e
 

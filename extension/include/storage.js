@@ -109,17 +109,8 @@ class ParanoidStorage {
     );
   }
 
-  static async setServiceForeignMap(origin, foreign_uid, map_key, map_value) {
-    let service = await this.getService(origin);
-    if (!service) {
-      throw new Error('Service does not exist');
-    }
-
-    if (!(foreign_uid in service.foreign_map)) {
-      service.foreign_map[foreign_uid] = {};
-    }
-    service.foreign_map[foreign_uid][map_key] = map_value;
-    await this.setService(origin, service);
+  static async getServiceForeignMap(origin) {
+    return await this._get(`services/${this.originToKey(origin)}/foreign_map`);
   }
 
   static async getLocal(key) {

@@ -73,6 +73,13 @@ def get_service(origin):
         'uids': uids,
     })
 
+@app.route('/services/<origin>/foreign_map', methods=['GET'])
+def get_service_foreign_map(origin):
+    "Fetches a foreign map for a service."
+
+    foreign_map = paranoid.resolve_foreign_map(origin)
+    return JsonResponse(foreign_map)
+
 
 @app.route('/services/<origin>', methods=['POST'])
 def put_service(origin):
