@@ -15,7 +15,7 @@ function startAuthFlow() {
   let callbackWindow = window.open(
     `web+paranoid://authenticate?${params.toString()}`,
     '',
-    'width=300,height=500'
+    'width=500,height=700'
   );
 
   // Wait for authentication flow to complete (user has to close the window explicitly)
