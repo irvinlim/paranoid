@@ -10,4 +10,8 @@ chrome.runtime.onInstalled.addListener(function({ reason }) {
   }
 });
 
-chrome.browserAction.onClicked.addListener(openWelcome);
+// Set browser action when icon is clicked.
+chrome.browserAction.onClicked.addListener(function() {
+  const settingsURL = `chrome-extension://${chrome.runtime.id}/views/settings/index.html`;
+  chrome.tabs.create({ url: settingsURL });
+});

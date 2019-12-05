@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Paranoid Settings</title>
+    <link
+      rel="stylesheet"
+      href="css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="css/bootstrap-editable.css" />
+    <link rel="stylesheet" href="css/font-awesome.min.css" />
+  </head>
+  <body>
+    <div class="container-fluid mt-4">
+      <div class="row">
+        <div class="col-2">
+          <img src="/res/icon.png" class="mx-auto d-block mb-4" alt="" />
+
+          <div
+            class="nav nav-pills flex-column mb-4"
+            id="pills-tab"
+            role="tablist"
+            aria-orientation="vertical"
+          >
+            <a
+              class="nav-link active"
+              id="pills-services-tab"
+              data-toggle="pill"
+              href="#pills-services"
+              role="tab"
+              aria-controls="pills-services"
+              aria-selected="true"
+              >Services</a
+            >
+            <a
+              class="nav-link"
+              id="pills-settings-tab"
+              data-toggle="pill"
+              href="#pills-settings"
+              role="tab"
+              aria-controls="pills-settings"
+              aria-selected="false"
+              >Settings</a
+            >
+          </div>
+
+          <div class="alert alert-secondary" id="daemon-status-box" role="alert">
+            <label>Daemon Status: <span id="daemon-status">checking...</span> </label>
+          </div>
+        </div>
+        <div class="col-10">
+          <div class="tab-content m-2" id="pills-tabContent">
+            <div
+              class="tab-pane fade show active"
+              id="pills-services"
+              role="tabpanel"
+              aria-labelledby="pills-services-tab"
+            >
+              <div class="accordion" id="accordionExample"></div>
+            </div>
+
+            <div
+              class="tab-pane m-2 fade"
+              id="pills-settings"
+              role="tabpanel"
+              aria-labelledby="pills-settings-tab"
+            >
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Settings</h5>
+                  <form id="settings-form">
+                    <div class="form-group">
+                      <label for="daemon-url-input">Daemon URL: </label>
+                      <input type="text" id="daemon-url-input" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                      <label for="session-token-input">Session Token: </label>
+                      <textarea id="session-token-input" class="form-control"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary">Save</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script
+      src="js/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="js/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"
+    ></script>
+    <script src="js/bootstrap-editable.min.js"></script>
+    <script src="../../include/storage.js"></script>
+    <script src="../../include/utils.js"></script>
+    <script src="js/popup.js"></script>
+  </body>
+</html>

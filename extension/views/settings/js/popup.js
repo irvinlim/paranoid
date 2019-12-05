@@ -16,19 +16,27 @@ async function prepareSettingsTab() {
     const alive = await ParanoidStorage.checkAlive();
     const authorized = await ParanoidStorage.checkToken();
 
-    const el = document.querySelector('#daemon-status');
-    el.innerHTML = 'checking...';
-    el.className = '';
+    const box = document.querySelector('#daemon-status-box');
+    const text = document.querySelector('#daemon-status');
+    text.innerHTML = 'checking...';
+    text.className = '';
+    box.className = 'alert alert-secondary';
 
     if (!alive) {
-      el.innerHTML = 'not running';
-      el.classList.add('text-error');
+      text.innerHTML = 'Not running';
+      text.classList.add('text-error');
+      box.classList.remove('alert-secondary');
+      box.classList.add('alert-error');
     } else if (!authorized) {
-      el.innerHTML = 'incorrect token';
-      el.classList.add('text-warning');
+      text.innerHTML = 'Incorrect token';
+      text.classList.add('text-warning');
+      box.classList.remove('alert-secondary');
+      box.classList.add('alert-warning');
     } else {
-      el.innerHTML = 'running';
-      el.classList.add('text-success');
+      text.innerHTML = 'Running';
+      text.classList.add('text-success');
+      box.classList.remove('alert-secondary');
+      box.classList.add('alert-success');
     }
   }
 
@@ -38,23 +46,28 @@ async function prepareSettingsTab() {
   // Set daemon URL via textbox
   const daemonURLInput = document.querySelector('#daemon-url-input');
   daemonURLInput.value = (await ParanoidStorage.getDaemonURL()) || '';
-  daemonURLInput.addEventListener('change', async function(e) {
-    // Save to localStorage.
-    await ParanoidStorage.setDaemonURL(e.target.value);
-
-    // Recheck daemon status.
-    await updateDaemonStatus();
-  });
 
   // Set session token via textbox
   const sessionTokenInput = document.querySelector('#session-token-input');
   sessionTokenInput.value = (await ParanoidStorage.getSessionToken()) || '';
-  sessionTokenInput.addEventListener('change', async function(e) {
+
+  // Handle form
+  const form = document.querySelector('#settings-form');
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    form.querySelector('button').innerHTML = 'Saving...';
+    form.querySelector('button').disabled = true;
+
     // Save to localStorage.
-    await ParanoidStorage.setSessionToken(e.target.value);
+    await ParanoidStorage.setDaemonURL(daemonURLInput.value);
+    await ParanoidStorage.setSessionToken(sessionTokenInput.value);
 
     // Recheck daemon status.
     await updateDaemonStatus();
+
+    form.querySelector('button').innerHTML = 'Save';
+    form.querySelector('button').disabled = false;
   });
 }
 
