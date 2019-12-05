@@ -42,19 +42,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.querySelectorAll('.username').forEach(setText(username));
 
   // Add Keybase profile link.
-  document.querySelector('.username-link').setAttribute('href', `https://keybase.io/${username}`);
+  document.querySelector('.username-link').setAttribute('href', getKeybaseProfile(username));
 
   // Add Keybase avatar.
-  const url = new URL('https://keybase.io/_/api/1.0/user/lookup.json');
-  url.searchParams.set('usernames', username);
-  const res = await sendXHR('GET', url.href);
-  const user = res.them[0];
-  if ('pictures' in user) {
-    document.querySelector('.user-avatar').setAttribute('src', user.pictures.primary.url);
-  } else {
-    const placeholderUrl = 'https://keybase.io/images/no-photo/placeholder-avatar-180-x-180@2x.png';
-    document.querySelector('.user-avatar').setAttribute('src', placeholderUrl);
-  }
+  const avatar = await getKeybaseAvatar(username);
+  document.querySelector('.user-avatar').setAttribute('src', avatar);
 
   // Register button handlers
   document.querySelector('button.approve').addEventListener('click', async function() {

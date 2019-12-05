@@ -59,6 +59,63 @@
               aria-labelledby="pills-services-tab"
             >
               <div class="accordion" id="accordionExample"></div>
+              <div
+                class="modal fade"
+                id="share-modal"
+                tabindex="-1"
+                role="dialog"
+                aria-labelledby="shareModalLabel"
+                aria-hidden="true"
+              >
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="shareModalLabel">Share Information</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="text-center">
+                        <div class="spinner-grow mb-3" id="shared-with-loading" role="status">
+                          <span class="sr-only">Loading...</span>
+                        </div>
+                      </div>
+                      <div id="shared-with" class="mb-3">
+                        <p>Currently shared with:</p>
+                        <ul class="list-group" id="shared-with-list">
+                          <li href="#" class="d-none">
+                            <div class="d-flex w-100">
+                              <img src="" class="rounded-circle mr-3" height="40" />
+                              <h5 class="mb-0 flex-grow-1" style="line-height: 40px;">
+                                <a href="#" target="_blank">Name</a>
+                              </h5>
+                              <button class="btn btn-danger">Revoke</button>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <form id="add-user-form">
+                        <div class="form-group">
+                          <label for="add-user">Share with a new Keybase user:</label>
+                          <div class="form-row">
+                            <div class="col-10">
+                              <input type="text" class="form-control" />
+                              <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-2">
+                              <button type="submit" class="btn btn-primary btn-block">
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="text-center">
                 <div class="spinner-grow" id="services-loading" role="status">
                   <span class="sr-only">Loading...</span>
@@ -110,8 +167,9 @@
       crossorigin="anonymous"
     ></script>
     <script src="js/bootstrap-editable.min.js"></script>
-    <script src="../../include/storage.js"></script>
-    <script src="../../include/utils.js"></script>
+    <script type="text/javascript" src="/include/storage.js"></script>
+    <script type="text/javascript" src="/include/utils.js"></script>
+    <script type="text/javascript" src="/include/keybase.js"></script>
     <script src="js/popup.js"></script>
   </body>
 </html>

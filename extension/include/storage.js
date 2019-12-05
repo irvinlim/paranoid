@@ -109,6 +109,18 @@ class ParanoidStorage {
     );
   }
 
+  static async shareServiceIdentityMap(origin, uid, field_name, username) {
+    return await this._post(
+      `services/${this.originToKey(origin)}/identities/${uid}/${field_name}/share/${username}`
+    );
+  }
+
+  static async unshareServiceIdentityMap(origin, uid, field_name, username) {
+    return await this._remove(
+      `services/${this.originToKey(origin)}/identities/${uid}/${field_name}/share/${username}`
+    );
+  }
+
   static async getServiceForeignMap(origin) {
     return await this._get(`services/${this.originToKey(origin)}/foreign_map`);
   }
