@@ -56,7 +56,7 @@ class ParanoidStorage {
   static async getServiceIdentities(origin) {
     const service = await this.getService(origin);
     if (!service) {
-      throw new Error('Service does not exist');
+      return [];
     }
 
     return await Promise.all(service.uids.map(uid => this.getServiceIdentity(origin, uid)));
