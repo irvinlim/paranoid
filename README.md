@@ -19,24 +19,8 @@ This is a project submission for CSCI 2390 Privacy-conscious Computer Systems.
 
 ### Daemon
 
-1. Set up virtualenv, install requirements
-2. Start server:
-
-   ```sh
-   python daemon.py
-   ```
+See [`daemon/README.md`](daemon/README.md).
 
 ### Sample App
 
-See [`sample-app/README.md`](`sample-app/README.md`).
-
-## TODO
-
-### TODO for Chromium Extension
-
-- [x] Create app shell for the extension
-- [x] Complete registration flow
-- [x] Complete login flow
-- [x] Unmasking of placeholders
-- [ ] Implement filesystem-backed storage
-- [ ] Implement permission granting between end-users
+See [`sample-app/README.md`](sample-app/README.md).
