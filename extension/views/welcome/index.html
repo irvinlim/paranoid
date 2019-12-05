@@ -5,25 +5,30 @@
   </head>
   <body>
     <main>
-      <img class="ext-icon" src="/res/icon.png" alt="" />
-
+      <img class="img-center ext-icon" src="/res/icon.png" alt="" />
       <h1>Thanks for installing Paranoid!</h1>
       <p>
-        To start using Paranoid with web services, click "Allow" in the protocol handler prompt in
-        the address bar.
+        To start using Paranoid with web services, follow these simple instructions!
       </p>
+
+      <h3>Step 1</h3>
+      <p>Click "Allow" in the protocol handler prompt in the address bar.</p>
+      <img class="img-center" src="img/handler-popup.png" alt="" />
+
       <p>
         If the icon is missing, check your Chrome settings page by opening
-        <code>chrome://settings/handlers</code>, and make sure that this URL is not blocked.
+        <a href="chrome://settings/handlers"><code>chrome://settings/handlers</code></a> (right
+        click, copy link address), and make sure that this URL is not blocked.
       </p>
+      <img class="img-center" src="img/handler-settings.png" alt="" />
 
+      <h3>Step 2</h3>
       <p>
-        Also, please run the daemon server on your local computer. This daemon server is required to
-        be running in order to communicate with KBFS and Keybase. Once running, copy the URL and
-        session token into the extension settings.
+        Please run the daemon server on your local computer. This daemon server is required to be
+        running in order to communicate with KBFS and Keybase.
       </p>
+      <p>Once running, copy the URL and session token into the extension settings.</p>
     </main>
-
     <script type="text/javascript" src="welcome.js"></script>
   </body>
 </html>
