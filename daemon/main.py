@@ -303,7 +303,13 @@ def init_default_files():
     default=False,
     help='Disables authentication for development. This is insecure and opens up secrets to be leaked via CSRF!',
 )
-def main(port, base_path, disable_auth):
+@click.option(
+    '--disable-chat',
+    is_flag=True,
+    default=False,
+    help='Disables sending of Keybase chat messages. This might be useful during development.',
+)
+def main(port, base_path, disable_auth, disable_chat):
     if disable_auth:
         click.secho(' * Authentication disabled for server.')
         click.secho('   WARNING: This opens up the server to be vulnerable to CSRF, which could leak secrets to other sites.', fg='red')
@@ -316,6 +322,9 @@ def main(port, base_path, disable_auth):
 
     # Initialize Keybase client
     keybase.init(base_path=base_path)
+
+    # Initialize Paranoid manager
+    paranoid.init(disable_chat=disable_chat)
 
     # Initialize default files
     init_default_files()

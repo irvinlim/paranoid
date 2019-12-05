@@ -83,6 +83,9 @@ class ParanoidManager():
     def __init__(self, keybase: KeybaseClient):
         self.keybase = keybase
 
+    def init(self, disable_chat=False):
+        self.disable_chat = disable_chat
+
     def get_origins(self) -> List[str]:
         "Returns a list of origins."
 
@@ -351,6 +354,9 @@ class ParanoidManager():
 
     def send_share_request(self, origin, uid, field_name, username):
         "Sends a share request via Keybase chat."
+
+        if self.disable_chat:
+            return
 
         # Create share request URL query string
         query = urlencode({
