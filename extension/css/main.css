@@ -1,5 +1,7 @@
 body {
     background-color: #f5f5f5;
+    font-family: system-ui, sans-serif;
+    font-size: 75%
 }
 
 img.img-center {
