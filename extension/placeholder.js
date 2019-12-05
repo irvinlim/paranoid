@@ -3,12 +3,20 @@
  * Attaches a closed shadow root to encapsulate private user fields, which will be inaccessible to the JS runtime.
  */
 
-(async () => {
-  const service = await ParanoidStorage.getService(origin);
-  if (!service) {
-    return;
-  }
+function replaceTag(tag, data) {
+  // Clear placeholder contents and append span element to house shadow root
+  const replacement_span = document.createElement('span');
+  tag.innerHTML = '';
+  tag.appendChild(replacement_span);
 
+  // Attach shadow root containing private data
+  const shadow = replacement_span.attachShadow({ mode: 'closed' });
+  const placeholder_replacement = document.createTextNode(data);
+  shadow.appendChild(placeholder_replacement);
+}
+
+(async () => {
+  const foreignMap = await ParanoidStorage.getServiceForeignMap(origin);
   const identities = await ParanoidStorage.getServiceIdentities(origin);
 
   const tags = document.getElementsByTagName('paranoid');
@@ -19,24 +27,13 @@
     for (let identity of identities) {
       const identityUid = identity.uid.toString();
 
-      if (uid === identityUid || uid in service.info.foreign_map) {
-        let unmasked_data = '';
-        if (uid === identityUid) {
-          unmasked_data = identity.map[attribute];
-        } else {
-          unmasked_data = service.info.foreign_map[uid][attribute];
-        }
+      if (uid === identityUid && attribute in identity.map) {
+        replaceTag(tag, identity.map[attribute]);
+        break;
+      }
 
-        // Clear placeholder contents and append span element to house shadow root
-        const replacement_span = document.createElement('span');
-        tag.innerHTML = '';
-        tag.appendChild(replacement_span);
-
-        // Attach shadow root containing private data
-        const shadow = replacement_span.attachShadow({ mode: 'closed' });
-        const placeholder_replacement = document.createTextNode(unmasked_data);
-        shadow.appendChild(placeholder_replacement);
-
+      if (uid in foreignMap && attribute in foreignMap[uid]) {
+        replaceTag(tag, foreignMap[uid][attribute]);
         break;
       }
     }
