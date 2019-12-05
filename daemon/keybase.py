@@ -111,8 +111,6 @@ class KeybaseClient:
                 raise KeybaseFileNotFoundException(path)
             if 'The system cannot find the file specified.' in e.stderr: #windows file not found
                 raise KeybaseFileNotFoundException(path)
-            if 'The parameter is incorrect.' in e.stderr: #windows dir not found
-                raise KeybaseFileNotFoundException(path)
             raise e
 
     def list_dir(self, path, filter=None):
