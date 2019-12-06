@@ -322,7 +322,9 @@ def main(port, base_path, disable_auth, disable_chat):
         require_token(app)
 
         # Print session token
-        print(' * Session token generated (paste into browser extension settings):\n\n{}\n'.format(get_token()))
+        click.secho(' * Session token generated (paste into browser extension settings):\n', fg='yellow')
+        click.secho(get_token())
+        click.secho()
 
     # Initialize Keybase client
     keybase.init(base_path=base_path)
@@ -331,7 +333,9 @@ def main(port, base_path, disable_auth, disable_chat):
     paranoid.init(disable_chat=disable_chat)
 
     # Prefetch Paranoid services
+    click.secho(" * Populating cache...")
     paranoid.prefetch()
+    click.secho(" * Prefetch complete.", fg='green')
 
     # Initialize default files
     init_default_files()
