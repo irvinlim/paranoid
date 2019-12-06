@@ -1,4 +1,4 @@
-# _Paranoid_: Privacy through Granular Separation of Identities
+# 👻 _Paranoid_: Privacy through Granular Separation of Identities
 
 This is a project submission for CSCI 2390 Privacy-Conscious Computer Systems.
 
