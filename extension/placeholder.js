@@ -15,26 +15,39 @@ function replaceTag(tag, data) {
   shadow.appendChild(placeholder_replacement);
 }
 
-(async () => {
-  const foreignMap = await ParanoidStorage.getServiceForeignMap(origin);
+async function getSelfIdentities(origin) {
   const identities = await ParanoidStorage.getServiceIdentities(origin);
 
+  // Preprocess service identities into a map
+  const identityMap = {};
+  for (let identity of identities) {
+    const uid = identity.uid.toString();
+    identityMap[uid] = identity.map;
+  }
+
+  return identityMap;
+}
+
+async function getForeignIdentities(origin) {
+  return await ParanoidStorage.getServiceForeignMap(origin);
+}
+
+(async () => {
+  // Use current window origin for replacement.
+  const origin = window.origin;
+
+  // Get both self and foreign identities in parallel.
+  const identityMaps = await Promise.all([getSelfIdentities(origin), getForeignIdentities(origin)]);
+
+  // Replace all paranoid tags.
   const tags = document.getElementsByTagName('paranoid');
   for (let tag of tags) {
     const uid = tag.getAttribute('uid');
     const attribute = tag.getAttribute('attribute');
 
-    for (let identity of identities) {
-      const identityUid = identity.uid.toString();
-
-      if (uid === identityUid && attribute in identity.map) {
-        replaceTag(tag, identity.map[attribute]);
-        break;
-      }
-
-      if (uid in foreignMap && attribute in foreignMap[uid]) {
-        replaceTag(tag, foreignMap[uid][attribute]);
-        break;
+    for (let map of identityMaps) {
+      if (uid in map && attribute in map[uid]) {
+        replaceTag(tag, map[uid][attribute]);
       }
     }
   }
