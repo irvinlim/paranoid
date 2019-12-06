@@ -18,8 +18,10 @@ async function reloadPage() {
   try {
     $('#reload-page').prop('disabled', true);
     $('#services-loading').show();
+    $('#services-list').hide();
     await updateDaemonStatus();
     await prepareServicesTab();
+    $('#services-list').show();
   } catch {
     $('#services-error').show();
   } finally {
@@ -245,8 +247,6 @@ async function prepareServicesTab() {
     const key = e.target.getAttribute('key');
     await ParanoidStorage.setServiceIdentityMap(origin, uid, key, newValue);
   });
-
-  $('#services-loading').remove();
 }
 
 function getKeyValueHTML(identity) {
