@@ -22,7 +22,7 @@ import click
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from auth import get_token, require_token
+import auth
 from cache import ParanoidCache
 from keybase import KeybaseClient
 from paranoid import ParanoidException, ParanoidManager
@@ -45,13 +45,13 @@ paranoid = ParanoidManager(keybase, cache)
 
 
 @app.route('/')
-def index():
+def get_index():
     "Simple index route for healthchecks."
     return JsonResponse()
 
 
 @app.route('/auth')
-def auth():
+def get_auth():
     "Simple index route for testing the authorization token."
     return JsonResponse()
 
@@ -312,6 +312,7 @@ def prefetch():
     help='Base path to look up Paranoid files. Defaults to "paranoid", which means that '
     'files will be located in /keybase/private/<username>/paranoid.',
 )
+@click.option('--token-file', help='Path to file to load session token from.')
 @click.option(
     '--disable-auth',
     is_flag=True,
@@ -324,18 +325,24 @@ def prefetch():
     default=False,
     help='Disables sending of Keybase chat messages. This might be useful during development.',
 )
-def main(port, ssl_cert, ssl_privkey, base_path, disable_auth, disable_chat):
+def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disable_chat):
     # Set up authorization session token.
     if disable_auth:
         click.secho(' * Authentication disabled for server.')
         click.secho('   WARNING: This opens up the server to be vulnerable to CSRF, which could leak secrets to other sites.', fg='red')
     else:
+        # Set up token from file if set.
+        if token_file:
+            with open(token_file) as f:
+                token = f.read().strip()
+                auth.set_token(token)
+
         # Registers all routes to require an authorization session token
-        require_token(app)
+        auth.require_token(app)
 
         # Print session token
-        click.secho(' * Session token generated (paste into browser extension settings):\n', fg='yellow')
-        click.secho(get_token())
+        click.secho(' * Session token loaded (paste into browser extension settings):\n', fg='yellow')
+        click.secho(auth.get_token())
         click.secho()
 
     # Set up SSL.
