@@ -1,0 +1,13 @@
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+
+[dn]
+C=US
+ST=RI
+L=Providence
+O=Brown University
+OU=CSCI 2390
+CN = daemon.paranoid.local

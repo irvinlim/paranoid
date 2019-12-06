@@ -15,6 +15,8 @@ of mappings.
 
 import json
 import os
+import sys
+from threading import Thread
 
 import click
 from flask import Flask, jsonify, request
@@ -293,8 +295,17 @@ def init_default_files():
             click.echo('Initialized {} on first run'.format(fullpath))
 
 
+def prefetch():
+    "Prefetch to populate cache"
+    click.secho(" * Populating cache...")
+    paranoid.prefetch()
+    click.secho(" * Prefetch complete.", fg='green')
+
+
 @click.command()
 @click.option('--port', help='Port to start the server on. Defaults to 5000.', type=int)
+@click.option('--ssl-cert', help='Path to SSL certificate.')
+@click.option('--ssl-privkey', help='Path to SSL private key.')
 @click.option(
     '--base-path',
     default='paranoid',
@@ -313,7 +324,8 @@ def init_default_files():
     default=False,
     help='Disables sending of Keybase chat messages. This might be useful during development.',
 )
-def main(port, base_path, disable_auth, disable_chat):
+def main(port, ssl_cert, ssl_privkey, base_path, disable_auth, disable_chat):
+    # Set up authorization session token.
     if disable_auth:
         click.secho(' * Authentication disabled for server.')
         click.secho('   WARNING: This opens up the server to be vulnerable to CSRF, which could leak secrets to other sites.', fg='red')
@@ -326,22 +338,33 @@ def main(port, base_path, disable_auth, disable_chat):
         click.secho(get_token())
         click.secho()
 
+    # Set up SSL.
+    ssl_context = None
+    if ssl_cert or ssl_privkey:
+        if not ssl_cert or not ssl_privkey:
+            click.secho('ERROR: Both SSL certificate and private key need to be provided.')
+            sys.exit(1)
+
+        ssl_context = (ssl_cert, ssl_privkey)
+    else:
+        click.secho(' * No SSL certificate specified.')
+        click.secho('   WARNING: This means that secrets will be transmitted in plaintext over the network interface specified.', fg='red')
+
     # Initialize Keybase client
     keybase.init(base_path=base_path)
 
     # Initialize Paranoid manager
     paranoid.init(disable_chat=disable_chat)
 
-    # Prefetch Paranoid services
-    click.secho(" * Populating cache...")
-    paranoid.prefetch()
-    click.secho(" * Prefetch complete.", fg='green')
+    # Prefetch in a background thread
+    prefetcher = Thread(target=prefetch)
+    prefetcher.start()
 
     # Initialize default files
     init_default_files()
 
     # Start Flask server
-    app.run(host='127.0.0.1', port=port)
+    app.run(host='127.0.0.1', port=port, ssl_context=ssl_context)
 
 
 if __name__ == "__main__":
