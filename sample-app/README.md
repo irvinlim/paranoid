@@ -1,6 +1,7 @@
 # Sample Paranoid-Compliant Application
 
-This is a sample application that allows a user to initiate the Paranoid login flow, display Paranoid-masked data, and store additional arbitrary fields (which can be Paranoid-masked data).
+This is a sample application that allows a user to initiate the Paranoid login flow, display
+Paranoid-masked data, and store additional arbitrary fields (which can be Paranoid-masked data).
 
 ## Instructions
 
