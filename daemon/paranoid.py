@@ -89,17 +89,23 @@ class ParanoidManager():
         self.disable_chat = disable_chat
 
     def prefetch(self):
-        print("Populating cache...")
+        "Prefetches data for objects which would store them in an in-memory cache for faster first-time load."
+
+        # Fetch list of all origins
         origins = self.get_origins()
         for origin in origins:
+            # Fetch all services and their foreign map
             self.get_service(origin)
             self.get_foreign_map(origin)
+
+            # Fetch all service identities
             uids = self.get_service_uids(origin)
             for uid in uids:
                 info = self.get_service_identity(origin, uid)
+
+                # Fetch all service identity fields
                 for field in info.get('fields'):
                     self.decrypt_data_file(origin, uid, field)
-        print("Paranoid daemon is ready")
 
     def get_origins(self) -> List[str]:
         "Returns a list of origins."
@@ -209,10 +215,12 @@ class ParanoidManager():
 
         # Save service identity
         path = self.get_service_path(origin, os.path.join('uids', '{}.json'.format(uid)))
-        return self.keybase.put_file(path, json.dumps(identity))
+        res = self.keybase.put_file(path, json.dumps(identity))
 
         # Update Cache
-        self.cache.set_service_identity(origin, uid, json.dumps(identity))
+        self.cache.set_service_identity(origin, uid, identity)
+
+        return res
 
     def get_foreign_map(self, origin):
         "Returns the unresolved foreign map for a given origin."
@@ -242,12 +250,12 @@ class ParanoidManager():
 
         # Save foreign map
         path = self.get_service_path(origin, 'foreign_map.json')
-        data = self.keybase.put_file(path, json.dumps(foreign_map))
+        res = self.keybase.put_file(path, json.dumps(foreign_map))
 
         # Update cache
-        self.cache.set_foreign_map(origin, data)
+        self.cache.set_foreign_map(origin, foreign_map)
 
-        return data
+        return res
 
     def resolve_foreign_map(self, origin) -> List[Dict[str, str]]:
         "Returns a list of resolved foreign mappings for a given origin."
