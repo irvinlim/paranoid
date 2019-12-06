@@ -4,12 +4,13 @@ This is a project submission for CSCI 2390 Privacy-Conscious Computer Systems.
 
 ## Introduction
 
-Paranoid aims to allow you to regain control of your own personal data. We explore a new paradigm of
+Paranoid aims to allow users to regain control of their personal data. We explore a new paradigm of
 designing web services to present personal data on HTML webpages without having access to the data
-itself. Paranoid achieves this by storing all personal data separately outside of the service,
-displaying them on the client side using browser DOM manipulation using a browser extension, and
-explicitly sharing data files with other users securely using Keybase. We show that such an approach
-is secure against untrusted services via various attack vectors.
+itself, with the assumption that the web service is untrusted. Paranoid achieves this by storing all
+personal data separately outside of the service, only substituting the private data on the client
+side via DOM manipulation using a browser extension, as well as a secure platform to share private
+data files with other users built on top of Keybase. We also show that such an approach is secure
+against various attack vectors, in the case of both malicious services and users.
 
 ## How it works
 
@@ -167,17 +168,32 @@ keychain.
 Using our implementation, it is also possible for a user to impersonate another user's service
 identity. Suppose Alice is associated with UID 13 on the service `fakebook.com`. However, Harry
 sends Bob a share request claiming to be associated with UID 13, and if Bob accepts the share
-request, Bob would mistakenly think that user 13 on `fakebook.com` is Harry.
+request, Bob would mistakenly think that user 13 on `fakebook.com` is Harry, and thus making Bob
+think that all content on the service's site linked to UID 13 is associated with Harry.
 
-There are several ways to combat this. One possible solution would be for the service itself to
-provide Bob a mechanism to prove the identity of a user by supplying user 13's public key, and
-requesting Alice (or Harry) to decrypt a challenge with their own private key. However, it is
-possible for the service to lie about a user's public key, especially if we do not trust the
-service.
+One may think we could simply use Keybase's mechanism of proofs to resolve this. However, we must
+remember that identities hidden via Paranoid are _intentionally_ made anonymous to the public, which
+puts it at odds with the goals of Keybase identity proofs. As such, Alice's Keybase user account
+cannot be publishing a signed identity proof claiming to be UID 13 on `fakebook.com`, as this would
+give away her identity that she wanted to keep secret from the world.
 
-TODO
+One initially plausible solution would be for the service itself to publish Alice's public key,
+allowing Bob to prove the Alice's identity by requesting the user to solve a challenge signed with
+the public key. However, it is possible for the service to lie about a user's public key, especially
+if we do not trust the service.
+
+As such, we see that the only viable solution would be to defer the responsibility of proof to a
+trusted platform. For example, we could modify the SSO flow such that when Alice registers on a
+service with her public key and receives a UID of 13, the service must publish this
+`<public_key, uid>` association onto a distributed ledger that we all trust. If a user wants to send
+a share request to Bob claiming to be user 13, Bob can then look up the ledger to retrieve the
+associated public key with the UID 13, and send the user a challenge encrypted with the associated
+public key in order for the user to prove ownership of the user account with UID 13.
 
 ## Instructions
+
+In order to use Paranoid, both the browser extension and the daemon server must be loaded and
+running.
 
 ### Chromium Extension
 
