@@ -12,10 +12,11 @@
     <link rel="stylesheet" href="css/font-awesome.min.css" />
   </head>
   <body>
-    <div class="container-fluid mt-4">
+    <div class="container mt-4">
       <div class="row">
-        <div class="col-2">
+        <div class="col-3">
           <img src="/res/icon.png" class="mx-auto d-block mb-4" alt="" />
+          <h5 class="text-center mb-4">Paranoid Settings</h5>
 
           <div
             class="nav nav-pills flex-column mb-4"
@@ -50,7 +51,7 @@
             <span id="daemon-status">checking...</span>
           </div>
         </div>
-        <div class="col-10">
+        <div class="col-9">
           <div class="tab-content m-2" id="pills-tabContent">
             <div
               class="tab-pane fade show active"
@@ -116,9 +117,21 @@
                   </div>
                 </div>
               </div>
-              <div class="text-center">
-                <div class="spinner-grow" id="services-loading" role="status">
-                  <span class="sr-only">Loading...</span>
+
+              <div class="container">
+                <div class="text-center">
+                  <div class="spinner-grow" id="services-loading" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                </div>
+
+                <div class="alert alert-danger" id="services-error" role="alert">
+                  <h4 class="alert-heading">Error</h4>
+                  <p>
+                    Could not connect to the daemon server. Make sure that the daemon server is
+                    running and the correct token is set.
+                  </p>
+                  <button class="btn btn-danger" id="reload-page">Try again</button>
                 </div>
               </div>
             </div>

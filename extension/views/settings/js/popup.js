@@ -1,47 +1,61 @@
 (async () => {
+  $('#services-error').hide();
+
   const alive = await ParanoidStorage.checkAlive();
   const authorized = await ParanoidStorage.checkToken();
 
   // Display daemon status in settings
   await prepareSettingsTab();
 
-  // Populate services if authorized
-  if (alive && authorized) {
-    await prepareServicesTab();
-  }
+  // Handle reload button
+  $('#reload-page').click(reloadPage);
+
+  // Load components on the page
+  await reloadPage();
 })();
 
-async function prepareSettingsTab() {
-  async function updateDaemonStatus() {
-    const alive = await ParanoidStorage.checkAlive();
-    const authorized = await ParanoidStorage.checkToken();
-
-    const box = document.querySelector('#daemon-status-box');
-    const text = document.querySelector('#daemon-status');
-    text.innerHTML = 'checking...';
-    text.className = '';
-    box.className = 'alert alert-secondary';
-
-    if (!alive) {
-      text.innerHTML = 'Not running';
-      text.classList.add('text-danger');
-      box.classList.remove('alert-secondary');
-      box.classList.add('alert-danger');
-    } else if (!authorized) {
-      text.innerHTML = 'Incorrect token';
-      box.classList.remove('alert-secondary');
-      box.classList.add('alert-warning');
-    } else {
-      text.innerHTML = 'Running';
-      text.classList.add('text-success');
-      box.classList.remove('alert-secondary');
-      box.classList.add('alert-success');
-    }
+async function reloadPage() {
+  try {
+    $('#reload-page').prop('disabled', true);
+    $('#services-loading').show();
+    await updateDaemonStatus();
+    await prepareServicesTab();
+  } catch {
+    $('#services-error').show();
+  } finally {
+    $('#services-loading').hide();
+    $('#reload-page').prop('disabled', false);
   }
+}
 
-  // Update daemon status
-  await updateDaemonStatus();
+async function updateDaemonStatus() {
+  const alive = await ParanoidStorage.checkAlive();
+  const authorized = await ParanoidStorage.checkToken();
 
+  const box = document.querySelector('#daemon-status-box');
+  const text = document.querySelector('#daemon-status');
+  text.innerHTML = 'checking...';
+  text.className = '';
+  box.className = 'alert alert-secondary';
+
+  if (!alive) {
+    text.innerHTML = 'Not running';
+    text.classList.add('text-danger');
+    box.classList.remove('alert-secondary');
+    box.classList.add('alert-danger');
+  } else if (!authorized) {
+    text.innerHTML = 'Incorrect token';
+    box.classList.remove('alert-secondary');
+    box.classList.add('alert-warning');
+  } else {
+    text.innerHTML = 'Connected';
+    text.classList.add('text-success');
+    box.classList.remove('alert-secondary');
+    box.classList.add('alert-success');
+  }
+}
+
+async function prepareSettingsTab() {
   // Set daemon URL via textbox
   const daemonURLInput = document.querySelector('#daemon-url-input');
   daemonURLInput.value = (await ParanoidStorage.getDaemonURL()) || '';
@@ -71,6 +85,8 @@ async function prepareSettingsTab() {
 }
 
 async function prepareServicesTab() {
+  $('#services-error').hide();
+
   const origins = await ParanoidStorage.getOrigins();
 
   const accordian = document.getElementById('accordionExample');
