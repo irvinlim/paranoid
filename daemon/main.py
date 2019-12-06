@@ -21,9 +21,9 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from auth import get_token, require_token
+from cache import ParanoidCache
 from keybase import KeybaseClient
 from paranoid import ParanoidException, ParanoidManager
-from cache import ParanoidCache
 from utils import JsonResponse
 
 # Create new Flask app

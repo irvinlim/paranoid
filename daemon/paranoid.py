@@ -72,8 +72,8 @@ from urllib.parse import urlencode
 
 from Crypto.Hash import SHA256
 
-from keybase import KeybaseClient
 from cache import ParanoidCache
+from keybase import KeybaseClient
 
 
 class ParanoidException(Exception):
@@ -87,7 +87,7 @@ class ParanoidManager():
 
     def init(self, disable_chat=False):
         self.disable_chat = disable_chat
-    
+
     def prefetch(self):
         print("Populating cache...")
         origins = self.get_origins()
@@ -100,7 +100,6 @@ class ParanoidManager():
                 for field in info.get('fields'):
                     self.decrypt_data_file(origin, uid, field)
         print("Paranoid daemon is ready")
-
 
     def get_origins(self) -> List[str]:
         "Returns a list of origins."
@@ -172,10 +171,10 @@ class ParanoidManager():
             path = self.get_service_path(origin, 'uids')
             data = [uid[:-5] for uid in self.keybase.list_dir(path, '*.json')]
 
-            #Update cache 
+            #Update cache
             self.cache.add_service_uids(origin, data)
 
-        return data 
+        return data
 
     def get_service_identity(self, origin, uid):
         "Returns a service identity."
@@ -191,7 +190,7 @@ class ParanoidManager():
             # Read service identity metadata
             data = self.keybase.get_json(path)
 
-            #Update cache 
+            #Update cache
             self.cache.set_service_identity(origin, uid, data)
 
         return data
@@ -229,7 +228,7 @@ class ParanoidManager():
             # Read all mappings for origin
             data = self.keybase.get_json(path)
 
-            #Update cache 
+            #Update cache
             self.cache.set_foreign_map(origin, data)
 
         return data
@@ -245,7 +244,7 @@ class ParanoidManager():
         path = self.get_service_path(origin, 'foreign_map.json')
         data = self.keybase.put_file(path, json.dumps(foreign_map))
 
-        #Update cache 
+        #Update cache
         self.cache.set_foreign_map(origin, data)
 
         return data
