@@ -37,6 +37,7 @@
                         <div class="col-3">
                             <div class="card">
                                 <div class="card-body">
+                                    <span class="small text-muted float-right">UID: {{ user.uid }}</span>
                                     <h5 class="card-title"><paranoid uid="{{ user.uid }}" attribute="first_name">Hidden Content</paranoid></h5>
                                     <h6 class="card-subtitle mb-2 text-muted"><paranoid uid="{{ user.uid }}" attribute="email">Hidden Content</paranoid></h6>
                                     <p class="card-text"><paranoid uid="{{ user.uid }}" attribute="bio">Hidden Content</paranoid></p>
@@ -44,7 +45,7 @@
                             </div>
                         </div>
             {% endfor %}
-                    </div>
+            </div>
         </div>
 
 
