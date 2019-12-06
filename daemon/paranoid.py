@@ -112,7 +112,7 @@ class ParanoidManager():
             # Convert origin filenames to origin keys
             data = [ParanoidManager.origin_filename_to_key(filename) for filename in self.keybase.list_dir(path)]
 
-            #Update cache
+            # Update cache
             self.cache.add_origins(data)
 
         return data
@@ -135,7 +135,7 @@ class ParanoidManager():
             # Get info
             data = self.keybase.get_json(path)
 
-            #Update cache
+            # Update cache
             self.cache.set_service(origin, data)
 
         return data
@@ -154,7 +154,7 @@ class ParanoidManager():
         self.keybase.put_file(path, json.dumps(service))
 
         # Update Cache
-        self.cache.set_service(origin, json.dumps(service))
+        self.cache.set_service(origin, service)
 
     def get_service_uids(self, origin) -> List[str]:
         "Returns a list of UIDs corresponding to all identities for a service."
@@ -171,7 +171,7 @@ class ParanoidManager():
             path = self.get_service_path(origin, 'uids')
             data = [uid[:-5] for uid in self.keybase.list_dir(path, '*.json')]
 
-            #Update cache
+            # Update cache
             self.cache.add_service_uids(origin, data)
 
         return data
@@ -190,7 +190,7 @@ class ParanoidManager():
             # Read service identity metadata
             data = self.keybase.get_json(path)
 
-            #Update cache
+            # Update cache
             self.cache.set_service_identity(origin, uid, data)
 
         return data
@@ -228,7 +228,7 @@ class ParanoidManager():
             # Read all mappings for origin
             data = self.keybase.get_json(path)
 
-            #Update cache
+            # Update cache
             self.cache.set_foreign_map(origin, data)
 
         return data
@@ -244,7 +244,7 @@ class ParanoidManager():
         path = self.get_service_path(origin, 'foreign_map.json')
         data = self.keybase.put_file(path, json.dumps(foreign_map))
 
-        #Update cache
+        # Update cache
         self.cache.set_foreign_map(origin, data)
 
         return data
@@ -381,7 +381,7 @@ class ParanoidManager():
             # Attempt to decrypt the data file
             data = self.keybase.decrypt(data_path)
 
-            #Update cache
+            # Update cache
             self.cache.encrypt_data_file(origin, uid, field_name, data)
 
         return data
@@ -401,7 +401,7 @@ class ParanoidManager():
         path = self.keybase.get_public(os.path.join('ids', field_hash))
         self.keybase.encrypt(path, data, shared_users)
 
-        #Update cache
+        # Update cache
         self.cache.encrypt_data_file(origin, uid, field_name, data)
 
     def reencrypt_data_file(self, origin, uid, field_name, shared_users):
