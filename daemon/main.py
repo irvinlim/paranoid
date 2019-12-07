@@ -325,7 +325,13 @@ def prefetch():
     default=False,
     help='Disables sending of Keybase chat messages. This might be useful during development.',
 )
-def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disable_chat):
+@click.option(
+    '--disable-cache',
+    is_flag=True,
+    default=False,
+    help='Disables the KBFS cache entirely. WARNING: This makes all operations extremely slow.',
+)
+def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disable_chat, disable_cache):
     # Set up authorization session token.
     if disable_auth:
         click.secho(' * Authentication disabled for server.')
@@ -361,11 +367,15 @@ def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disab
     keybase.init(base_path=base_path)
 
     # Initialize Paranoid manager
-    paranoid.init(disable_chat=disable_chat)
+    paranoid.init(disable_chat=disable_chat, disable_cache=disable_cache)
 
-    # Prefetch in a background thread
-    prefetcher = Thread(target=prefetch)
-    prefetcher.start()
+    if disable_cache:
+        click.secho(' * KBFS cache disabled.')
+        click.secho('   WARNING: This makes all operations extremely slow.', fg='red')
+    else:
+        # Prefetch in a background thread
+        prefetcher = Thread(target=prefetch)
+        prefetcher.start()
 
     # Initialize default files
     init_default_files()

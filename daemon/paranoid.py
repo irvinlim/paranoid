@@ -72,7 +72,7 @@ from urllib.parse import urlencode
 
 from Crypto.Hash import SHA256
 
-from cache import ParanoidCache
+from cache import MockCache, ParanoidCache
 from keybase import KeybaseClient
 
 
@@ -85,11 +85,20 @@ class ParanoidManager():
         self.keybase = keybase
         self.cache = cache
 
-    def init(self, disable_chat=False):
+    def init(self, disable_chat=False, disable_cache=False):
         self.disable_chat = disable_chat
+        self.disable_cache = disable_cache
+
+        # If cache is disabled, replace with a dummy cache that always returns a cache miss
+        if disable_cache:
+            self.cache = MockCache()
 
     def prefetch(self):
         "Prefetches data for objects which would store them in an in-memory cache for faster first-time load."
+
+        # Nothing to prefetch if we don't have a cache
+        if self.disable_cache:
+            return
 
         # Fetch list of all origins
         origins = self.get_origins()

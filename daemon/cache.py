@@ -43,7 +43,19 @@ Cache Structure
 """
 
 
-class ParanoidCache:
+class MockCache():
+    """
+    Stub implementation of ParanoidCache that doesn't actually cache anything.
+    """
+    def __getattribute__(self, name):
+        def mock(*args, **kwargs):
+            # Return cache miss on every invocation
+            return None, False
+
+        return mock
+
+
+class ParanoidCache():
     def __init__(self):
         self.cache = {
             'service_info': {},
