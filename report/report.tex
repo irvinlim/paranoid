@@ -54,7 +54,7 @@
 \section{Introduction}
 %-------------------------------------------------------------------------------
 
-\subsection{Goals of the project}
+\subsection{Goals of the project}\label{sec:project_goals}
 
 In the recent years, there have been an increasing number of high profile instances of users'
 personal information being compromised via web services. This includes, but is not limited to:
@@ -141,7 +141,7 @@ The \texttt{<paranoid>} tag can contain several attributes, but the most importa
 
 The browser extension can simply inspect the webpage for all such \texttt{<paranoid>} HTML tags, and replace the inner text of the tag with the data values by matching against the origin of the web page, and the UID and field name of the HTML tag. In other words, we associate the \textit{field tuple}, as defined by $\langle origin, uid, field\_name \rangle$, with a specific private data value, and the browser extension simply enumerates all available data values to find if its field tuple matches that on the \texttt{<paranoid>} HTML tag.
 
-\subsection{Encapsulation using Shadow DOM}\label{sec:shadow_dom}
+\subsection{Isolation using Shadow DOM}\label{sec:shadow_dom}
 
 If we naively replace the HTML tags as a simple string replacement, the untrusted web service is able to extract the already-replaced HTML tags to retrieve the private information using client-side JavaScript. A notable example would be British Airways' data breach in 2018 \cite{Ng:2018}, where malicious client-side JavaScript that was injected to the British Airways website was able to siphon credit card information from users when forms were submitted.
 
@@ -207,7 +207,13 @@ To notify $B$ of a data file that is now made accessible to him, we send a Keyba
 
 \subsection{Threat model}
 
-% TODO
+As we have discussed thus far, Paranoid was extensively designed to assume that we cannot trust web services with private data at all for various reasons described in \cref{sec:project_goals}. However, we expect that in order to be compliant with Paranoid, web services must ensure that UIDs assigned to users during registration are unique. After all, we believe that web services are incentivized to ensure that the integrity of their user authentication scheme is not compromised, and only grant users session cookies after sufficient authorization to prove their identity, even if we do not trust that they will not misappropriate personal data.
+
+Paranoid assumes that the user trusts all other users that they chose to share their data with via share requests, since the act of re-encrypting a private data file with a new user's public key would immediately grant them read access to the private data, even if they do not accept the share request on their end. Users who have data shared with them may choose to copy out the private data out of KBFS, and Paranoid makes no guarantees that if they later changed their mind and decided to ``unshare'' or rescind the share request, that the other user does not still have a copy of the data. In other words, once shared, we must assume that the values shared to the user is irrevocable. However, it is still possible for the user to rescind the share request, then update the private data to a new value (for example, a password), and the other user would not be able to read the new private value.
+
+Paranoid also assumes that users perform their due diligence to ensure that users who they send share requests to over Keybase are indeed the correct user they with to send to. After all, the underlying idea of Keybase is to provide cryptographically provable identities, by associating a Keybase user with identities on other sites like Facebook, GitHub and Twitter. Keybase also relies on the concept of ``following'' \cite{KeybaseFollowing}, where Keybase users can sign a snapshot of another user's identity at the time when they have verified their identity with both automatic scraping of proofs and manual verification. We hope that Paranoid users would make use of the tools that Keybase has provided in order to prove another user's identity before sending them a share request.
+
+Finally, Paranoid also places a huge amount of trust in the Keybase and KBFS systems, since all metadata and private data files are stored in KBFS. We have several reasons to believe it to be reasonable to trust Keybase at this time. Firstly, all of Keybase's client source code is open source and available on GitHub, and given the amount of attention it is receiving in recent years, it would be easy to discover security vulnerabilities or malicious code hidden within the Keybase client source. Secondly, Keybase encourages the client to be highly skeptical of the server at any given time, such that any ``rollbacks'' or illegitimate changes to a user signature chain in the Merkle tree can be detected, thus preventing the server from rewriting history should it become compromised \cite{KeybaseServerSecurity}. Finally, Keybase is also riding on the relative infallibility of the Bitcoin blockchain, by publishing its Merkle root (and thus verifying all past Merkle tree entries) into the Bitcoin blockchain every so often \cite{KeybaseBitcoin}, making it even harder for adversaries to compromise user signature chains.
 
 \subsection{Encryption}
 
@@ -229,9 +235,9 @@ The daemon server sends all data files unencrypted to the browser extension, and
 
 While the typical CSRF protection usually involves browser enforcement of CORS or using CSRF tokens, this does not apply in our case, since requests have to be made automatically when a page is loaded for an untrusted origin. We realised the key idea is to perform authentication such that only the browser extension is able to make the request, and not arbitrary JavaScript on the page.
 
-We thus make use of a session token to authenticate all HTTPS clients to the daemon server. This session token has to be made known to the browser extension before Paranoid is used. The browser extension sends a HTTP `Authorization` header, which the daemon server uses to authenticate all incoming HTTP requests, and reject the request if the session token does not match.
+We thus make use of a authorization token to authenticate all HTTPS clients to the daemon server. This authorization token has to be made known to the browser extension before Paranoid is used. The browser extension sends a HTTP `Authorization` header, which the daemon server uses to authenticate all incoming HTTP requests, and reject the request if the authorization token does not match.
 
-This session token is stored within the extension's \texttt{localStorage} IndexedDB location, instead of a per-origin \texttt{localStorage}. Although unencrypted, we can ensure that untrusted JavaScript on third-party web pages do not have access to the session token to open up the system to CSRF.
+This authorization token is stored within the extension's \texttt{localStorage} IndexedDB location, instead of a per-origin \texttt{localStorage}. Although unencrypted, we can ensure that untrusted JavaScript on third-party web pages do not have access to the authorization token to open up the system to CSRF.
 
 \subsubsection{Man-in-the-middle (MITM)}
 
