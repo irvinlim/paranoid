@@ -1,0 +1,11 @@
+# TeX
+*.bbl
+*.blg
+*.aux
+*.log
+*.out
+*.dvi
+*.fls
+*.*_latexmk
+*.synctex.gz
+_minted*/

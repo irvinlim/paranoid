@@ -1,0 +1,68 @@
+%% Creator: Inkscape inkscape 0.92.2, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'svg/paranoid_architecture.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%%
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \fontsize{8pt}{10pt}\selectfont%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{949.80201822bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.31065491)%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{svg/paranoid_architecture.pdf}}%
+    \put(0.67980169,0.22544172){\color[rgb]{0,0,0}\makebox(0,0)[b]{\textbf{Extension}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{svg/paranoid_architecture.pdf}}%
+    \put(0.08283518,0.14568826){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{\textbf{Service}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{svg/paranoid_architecture.pdf}}%
+    \put(0.41527288,0.27676821){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{HTML Webpage}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{svg/paranoid_architecture.pdf}}%
+    \put(0.39079409,0.19780438){\color[rgb]{0.2,0.2,0.2}\makebox(0,0)[b]{\smash{Placeholder}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{svg/paranoid_architecture.pdf}}%
+    \put(0.43817239,0.11094417){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{Private Data}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{svg/paranoid_architecture.pdf}}%
+    \put(0.76982045,0.03908709){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{\textbf{Daemon Server}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{svg/paranoid_architecture.pdf}}%
+    \put(0.93564448,0.12910585){\color[rgb]{0.2,0.2,0.2}\makebox(0,0)[b]{\smash{\textbf{KBFS}}}}%
+  \end{picture}%
+\endgroup%
