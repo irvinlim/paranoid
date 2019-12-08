@@ -145,7 +145,7 @@ The browser extension can simply inspect the webpage for all such \texttt{<paran
 
 If we naively replace the HTML tags as a simple string replacement, the untrusted web service is able to extract the already-replaced HTML tags to retrieve the private information using client-side JavaScript. A notable example would be British Airways' data breach in 2018 \cite{Ng:2018}, where malicious client-side JavaScript that was injected to the British Airways website was able to siphon credit card information from users when forms were submitted.
 
-Instead, we make use of the the Shadow DOM specification \cite{Bidelman}, which is supported by most major browsers today. The Shadow DOM specification was developed for the purpose of the Web Component standard, which was designed as a tool to develop component-based (i.e. composition-based) web applications. For example, CSS defined within the shadow DOM would be locally scoped to the shadow DOM, preventing global selectors from affecting elements outside of the shadow DOM, and JavaScript element queries using \texttt{document.querySelector} (for example) would not return elements inside of shadow DOMs. This means that web developers can design components as standalone DOM trees which can be composed inside of other DOM trees without fear of polluting the global CSS and JS namespace. Figure \ref{fig:shadow_dom} shows how shadow DOM trees can be attached to an existing DOM tree.
+Instead, we make use of the Shadow DOM specification \cite{Bidelman}, which is supported by most major browsers today. The Shadow DOM specification was developed for the purpose of the Web Component standard, which was designed as a tool to develop component-based (i.e. composition-based) web applications. For example, CSS defined within the shadow DOM would be locally scoped to the shadow DOM, preventing global selectors from affecting elements outside of the shadow DOM, and JavaScript element queries using \texttt{document.querySelector} (for example) would not return elements inside of shadow DOMs. This means that web developers can design components as standalone DOM trees which can be composed inside of other DOM trees without fear of polluting the global CSS and JS namespace. Figure \ref{fig:shadow_dom} shows how shadow DOM trees can be attached to an existing DOM tree.
 
 \begin{figure}[]
     \centering
@@ -170,9 +170,9 @@ We exploited this useful API to encapsulate and hide private data within a shado
 
 One may wonder if this method is truly secure, as it is also asserted on the Shadow DOM guide \cite{Bidelman} that closed shadow roots may be seen by some as an ``artificial security feature'', since an attacker could trivially overload the \texttt{Element.prototype.attachShadow} method with a malicious implementation using JavaScript code executed on the same page.
 
-To get around this, we execute the JavaScript code that calls \texttt{Element.prototype.attachShadow} within a content script \cite{ContentScript}, a feature of Chrome extensions. Content scripts are injected into the context of the current webpage, but executed in isolated JavaScript environments (known as \textit{Isolated Worlds}). The purpose of Chrome's Isolated Worlds feature allows Chrome extensions to have privileged access to Chrome APIs (such as \texttt{chrome.storage}) that should not be permissible by JavaScript running on the web page.
+To get around this, we execute the JavaScript code that calls \texttt{Element.prototype.attachShadow} within a content script \cite{ContentScript}, a feature of Chrome extensions. Content scripts are injected into the context of the current webpage, but executed in isolated JavaScript environments (known as \textit{Isolated Worlds}). The purpose of Chrome's Isolated Worlds feature allows Chrome extensions to have privileged access to Chrome APIs (such as \texttt{chrome.storage}) that should not be permissible by JavaScript running on the web page. Though it is not a concern for Paranoid, content scripts are however vulnerable to side channel attacks (e.g. Spectre), named item exploits and possibly remote code execution if proper sanitization is not in place\cite{ContentScriptSecurity}
 
-As such, any changes to the JavaScript environment in the web page would not affect the JavaScript environment within the content script of our browser extension, hence making it immune from \texttt{attachShadow} overloading attacks. Additionally, because of this the browser extension must be written for a Chromium browser, in order to support the execution of content scripts in isolation from the untrusted web page's JavaScript code.
+As such, any changes to the JavaScript environment in the web page would not affect the JavaScript environment within the content script of our browser extension, hence making it immune from \texttt{attachShadow} overloading attacks. Additionally, because of this, the browser extension must be written for a Chromium browser, in order to support the execution of content scripts in isolation from the untrusted web page's JavaScript code.
 
 \subsection{Keybase-backed private data storage}
 
@@ -267,25 +267,73 @@ Note that we must use a ledger so that adversaries cannot rewrite previously pub
 
 \subsubsection{Browser extension}
 
-% TODO
+As mentioned earlier in the paper, Paranoid's chromium extension handles a few key features of the system. They are namely, SSO authentication, private data overlay as well as the various user interfaces for changing settings and sharing/revoking of private data.
+
+SSO authentication is achieved through the use of a custom web protocol as well as a custom authentication flow (as detailed in Section 2.1). 
+
+\begin{center}
+    \begin{lstlisting}
+        // Prepare query string parameters
+        const params = new URLSearchParams();
+        params.set('app_name', APP_NAME);
+        params.set('origin', BASE_URL);
+        params.set('register_callback', '/auth/paranoid/register');
+        params.set('login_callback', '/auth/paranoid/login');
+        params.set('map_path', '/paranoid_map');
+        params.set('state', document.querySelector('input[name=csrfmiddlewaretoken]').value);
+
+        // Open new window in Paranoid URL scheme
+        let callbackWindow = window.open(
+            `web+paranoid://authenticate?${params.toString()}`,
+            '',
+            'width=500,height=700'
+        );
+    \end{lstlisting}
+    \captionof{figure}{Inititating SSO using custom \texttt{web+paranoid} protocol.}
+    \label{fig:paranoid_protocol}
+\end{center}
+
+The custom protocol allows web services to initiate a SSO authentication process by simply redirecting/opening a window (Figure \ref{fig:paranoid_protocol}) using the protocol. The extension then coordinates the authentication process and communicates with the relevant parties via XHR/AJAX requests. 
+
+As for private data overlay, a combination of custom paranoid html tags, closed shadow DOMs and content scripts are deployed to ensure secure replacement and isolation of placeholders (As detailed in both Section 2.2 and 2.3). When a web page finishes loading, the extension injects a script to look for paranoid html tags. Then using the tags' attributes, the extension queries the daemon for the corresponding private data and replaces the placeholder accordingly.
+
+Finally, the extension also provides a user interface. The interface allows for users to change settings, change private data for specific fields as well as share or revoke access to the private data with other users. All actions made by the client on the interface are communicated to the daemon where they are made persistent. For example, if a user changes the data in his first name field, the daemon would replace then old data for the new one and handle all the corresponding encryption. Similarly, in the case of sharing, the daemon would send a share request on the user's behalf.
+
+The extension contains the core logic of the Paranoid system and putting it together is not without its challenges. There are 3 main challenges that we had to overcome. Initially, we attempted to have the extension directly interact with the keybase client/servers. However, this proved to be a tall order as the keybase client and service does not provide any web apis. Hence, the daemon was created to bridge this gap between the extension and keybase. 
+
+The other challenge that stood in our way was the issue of including placeholders within scripts. For example, this could be an alert or console message that might want to print out the actual private data. However, after much research, we could not manage to ensure the security of the private data and hence opted to restrict the private data overlay to only paranoid html tags.
+
+Lastly, as the authentication page is generated by the extension itself, CSRf tokens could not be supported as csrftoken cookies could not be set due to cross-domain rules. CSRF protection is therefore unsupported for login/registration, CSRF protection is still viable for all other service requests. Moreover, in the actual event of a CSRF attack, private data remains uncompromised. Hence, we believe that this vulnerability is still acceptable but agree that future improvements to the SSO mechanism is required.
 
 \subsubsection{Daemon server}
 
-% TODO
+The daemon is a simple application that bridges that gap between the Paranoid extension and keybase. The daemon essentially acts as a relay between them. While the daemon is simple in theory, implementing it was trickier than expected.
+
+The initial build of the daemon was quickly found to be taking over 2 seconds to respond to a single request from the extension. An investigation into the inner workings revealed that main source of delays lies with KBFS. Since we are storing all data on KBFS, a request may require many \texttt{read(2)} and \texttt{getdents(2)} calls of several different files and directories within KBFS. Considering that the private TLF is fully encrypted, and data files in the public TLF are also encrypted, much of the overhead may stem from the fact that we have to repeatedly perform decryption on each request.
+
+As such, a caching mechanism became a necessity and we managed to improve the response time of the daemon server by implementing an in-memory cache that stores all decrypted metadata and data files, and updating the cache only when an update is made.
 
 \subsubsection{Sample Paranoid-compliant web service}
 
-% TODO
+As part of our testing efforts, we created a simple sample Paranoid web service that deploys the Paranoid SSO and displays a placard for each user registered. Each placard contains Paranoid placeholders for users' first name, email and bio.
 
-\subsection{Challenges faced}
+In addition, an 'evil' page (accessible via /evil) is created to simulate a  malicious service attempting to siphon user's private data. The evil service would periodically send a copy of the entire DOM to a malicious endpoint.
 
-Since we are storing all data on KBFS, we quickly found that requests made to the daemon server were constantly taking over 2 seconds to complete. This is because a request may require many \texttt{read(2)} and \texttt{getdents(2)} calls of several different files and directories within KBFS. Considering that the private TLF is fully encrypted, and data files in the public TLF are also encrypted, much of the overhead may stem from the fact that we have to repeatedly perform decryption on each request.
-
-We managed to improve the response time of the daemon server by implementing an in-memory cache that stores all decrypted metadata and data files, and updating the cache only when an update is made. This drastically improved the average response time of the server. In one of our tests, the response for a particular endpoint to return a single service identity's metadata and data files saw a ~130x improvement (3703ms uncached vs 27ms cached).
+Moreover, manual hijacking scripts are also attempted via the browser's developer console. Some attempted techniques include, overriding the attachShadow method, referencing the shadow DOM within the content script, overriding variables within the content scripts and injecting scripts within the paranoid html tag to carry out XSS attacks.
 
 \section{Evaluation}
 
-% TODO
+Paranoid demonstrated little to no overhead to the client host system as well as web page loading times. Placeholder overlays similarly saw little to no performance overhead but displayed a visual delay of 500ms-1000ms before private data shows up on the page. This mainly due to the fact that overlay operations only execute after a page has completed loading, hence, users may see partially-rendered pages with placeholders values. However, this sub-second visual delay is a step up from the previous >3000ms delays we used to see before implementing the caching system in the daemon. With caching integrated, in one of our tests, the response for a particular endpoint to return a single service identity's metadata and data files saw a ~130x improvement (3703ms uncached vs 27ms cached), drastically reducing visual delay.
+
+In addition to performance evaluations, security evaluations are also a top priority. Throughout development, networks logs are collected and frequently screened for any signs of leakage. SSO authentication flows are scrutinized and various hijack attempts are made to leak private data.  
+
+Though no leakage is detected through our tests on all known public exploits, we remain vigilant as the closed shadow DOM and content script specification are fairly uncommon and our test suite may not be able to cover all potential exploits.
+
+Through these evaluation, it can be seen that Paranoid achieved all 5 of its goals. As services no longer have access to private data, data breaches are minimized. Governments likewise would not be able to indirectly obtain users data. Users now have explicit control over where or who can get access to their data. Users no longer have to rely on services for the security of their data. Finally, as brand new public/private key pairs are enforced for each new service encountered, web activity can no longer be trivially correlated to a user.
+
+\section{Conclusions}
+
+Paranoid explores a novel approach by moving away from traditional modes of communications and interactions between users and services. Paranoid demonstrates effectiveness at and the value of keep private data secure and out of the hands of services. Paranoid further demonstrates the enablement of users to regain control of their personal data. Paranoid achieves the 5 goals set out in its objectives at the cost of little to no overhead to both the users and web services. 
 
 %-------------------------------------------------------------------------------
 
