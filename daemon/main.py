@@ -369,6 +369,9 @@ def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disab
     # Initialize Paranoid manager
     paranoid.init(disable_chat=disable_chat, disable_cache=disable_cache)
 
+    # Initialize default files
+    init_default_files()
+
     if disable_cache:
         click.secho(' * KBFS cache disabled.')
         click.secho('   WARNING: This makes all operations extremely slow.', fg='red')
@@ -377,8 +380,7 @@ def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disab
         prefetcher = Thread(target=prefetch)
         prefetcher.start()
 
-    # Initialize default files
-    init_default_files()
+    
 
     # Start Flask server
     app.run(host='127.0.0.1', port=port, ssl_context=ssl_context)
