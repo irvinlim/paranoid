@@ -302,6 +302,10 @@ Finally, the extension also provides a user interface. The interface allows for 
 
 The daemon is a simple application that bridges that gap between the Paranoid extension and keybase. The daemon essentially acts as a relay between them. While the daemon is simple in theory, implementing it was trickier than expected.
 
+We faced several problems ensuring cross-platform compatibility between Unix and Windows. For example, on Unix the KBFS mount point is \texttt{/keybase}, while in Windows it is the \texttt{K:} drive. Differences in directory separators led us to execute all KBFS queries using the \texttt{keybase} command-line executable, rather than direct filesystem calls, but there were still several nuanced differences between the clients on Windows and Unix.
+
+Additionally, since Windows does not allow the colon (\texttt{:}) character in filenames, which we used to identify origins uniquely (in the format \texttt{<scheme>:<hostname>:<port>}), we had to perform substring replacement to convert colons into \texttt{@} characters instead, which is not a valid character in an origin and thus was a viable candidate for substitution.
+
 The initial build of the daemon was quickly found to be taking over 2 seconds to respond to a simple \texttt{GET} request from the extension via AJAX. Since we are storing all data on KBFS, a request may require many \texttt{read(2)} and \texttt{getdents(2)} calls of several different files and directories within KBFS. Considering that the private TLF is fully encrypted, and data files in the public TLF are also encrypted, much of the overhead may stem from the fact that we have to repeatedly perform decryption of not only data files, but every single filesystem data structure in KBFS while traversing the path.
 
 As such, a caching mechanism became a necessity and we managed to improve the response time of the daemon server by implementing an in-memory cache that stores all decrypted metadata and data files, and updating the cache only when an update is made.
