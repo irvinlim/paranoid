@@ -207,11 +207,13 @@ As such, we introduce the notion of a share request. A screenshot of an example 
 
 To notify $B$ of a data file that is now made accessible to him, we send a Keybase Chat message originating from $A$ to $B$, of a share request that $A$ wants to send to $B$. $B$ can then accept the share request, which would keep track of the field tuple in its private storage's \textit{foreign map}, and thus allowing the browser extension to now replace tags corresponding to $A$ on the service's web page.
 
-\section{Security overview}
+\section{Security Overview}
 
-\subsection{Threat model}
+\subsection{Threat and trust model}
 
 As we have discussed thus far, Paranoid was extensively designed to assume that we cannot trust web services with private data at all for various reasons described in \cref{sec:project_goals}. However, we expect that in order to be compliant with Paranoid, web services must ensure that UIDs assigned to users during registration are unique. After all, we believe that web services are incentivized to ensure that the integrity of their user authentication scheme is not compromised, and only grant users session cookies after sufficient authorization to prove their identity, even if we do not trust that they will not misappropriate personal data.
+
+Since Paranoid's functionality is highly dependent on Chromium extension features, we also have to include the browser (as well as the underlying machine it runs on) as part of the trusted computing base (TCB). Fidelius (2019) \cite{Eskandarian2019} explores various strategies when dealing with user secrets on top of compromised browsers, which could potentially be integrated with Paranoid for those who are \textit{truly paranoid}.
 
 Paranoid assumes that the user trusts all other users that they chose to share their data with via share requests, since the act of re-encrypting a private data file with a new user's public key would immediately grant them read access to the private data, even if they do not accept the share request on their end. Users who have data shared with them may choose to copy out the private data out of KBFS, and Paranoid makes no guarantees that if they later changed their mind and decided to ``unshare'' or rescind the share request, that the other user does not still have a copy of the data. In other words, once shared, we must assume that the values shared to the user is irrevocable. However, it is still possible for the user to rescind the share request, then update the private data to a new value (for example, a password), and the other user would not be able to read the new private value.
 
@@ -226,6 +228,8 @@ We make use of Keybase to provide encryption at rest of all private data files a
 As such, no keys or data files are stored in the browser such that it can be accessible by JavaScript, and instead all secrets must be decrypted and transmitted from the daemon server to the browser extension over HTTPS.
 
 \subsection{Potential attacks}
+
+In this section we describe any potential attacks on Paranoid based on our design described above. We find that the relevant attacks discussed are all reasonably mitigated by our design and implementation, or otherwise have proposed solutions to mitigate them.
 
 \subsubsection{JavaScript Prototype Poisoning}
 
