@@ -50,6 +50,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Register button handlers
   document.querySelector('button.approve').addEventListener('click', async function() {
+    var buttons = document.getElementsByClassName("btn");
+    buttons[0].disabled = true;
+    buttons[0].innerHTML = '<div class="loader">Processing...</div>';
+    buttons[1].disabled = true;
+    buttons[1].style.display = 'none';
     await approve(origin, uid, field_name, username);
   });
   document.querySelector('button.deny').addEventListener('click', deny);
