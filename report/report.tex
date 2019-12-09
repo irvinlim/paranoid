@@ -369,7 +369,7 @@ Paranoid demonstrated little to no overhead to the client host system as well as
 We also developed an ``evil'' page (accessible via \texttt{/evil}) within the sample application, in order to simulate a malicious service attempting to siphon user's private data. The malicious script run on the ``evil'' page would in theory, attempt to:
 
 \begin{enumerate}
-    \item Wait 2000 ms for Paranoid data overlay to take place, such that private data is now in the DOM.
+    \item Wait 5000 ms for Paranoid data overlay to take place, such that private data is now in the DOM.
     \item Query for elements containing \texttt{<paranoid>} tags and get the \texttt{outerHTML} of the entire DOM subtree.
     \item Send the \texttt{outerHTML} as a string back to the malicious server via an AJAX request.
 \end{enumerate}

