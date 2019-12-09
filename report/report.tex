@@ -160,7 +160,7 @@ We exploited this useful API to encapsulate and hide private data within a shado
     \begin{lstlisting}
     const span = document.createElement("span");
     const shadowRoot = span.attachShadow({
-        mode: closed,
+        mode: "closed",
     });
     shadowRoot.innerHTML = "Private Data";
     \end{lstlisting}
@@ -198,7 +198,7 @@ KBFS also does not provide a push-like synchronization mechanism (a la Dropbox),
 
 \begin{figure}[]
     \centering
-    \includegraphics[width=\columnwidth]{png/share_request.png}
+    \includegraphics[width=0.8\columnwidth]{png/share_request.png}
     \caption{Example share request dialog that requests the user to confirm whether if a field tuple sent by \texttt{max} on Keybase should be added to the user's foreign map, to allow placeholder replacements for the specified field tuple. In this case, the field tuple is \texttt{(origin="http://127.0.0.1:8000", uid="13", field\_name="first\_name")}.}
     \label{fig:share_request}
 \end{figure}
@@ -261,6 +261,29 @@ As such, we see that the only viable solution would be to defer the responsibili
 
 Note that we must use a ledger so that adversaries cannot rewrite previously published associations. We did not implement this in our implementation, but we see how we could easily extend the current implementation to make use of a ledger for proving claims for a UID.
 
+\subsubsection{Side channel attacks}
+
+Since much of Paranoid is implemented as a browser extension that houses private data in plaintext, there is very little the JavaScript extension can do in terms of preventing side channel attacks. Because we must trust the browser, we must also trust the underlying machine to not leak the private user secrets. As such, Paranoid cannot defend against attacks like Spectre \cite{Kocher2018spectre}. We believe this to be reasonable since plaintext secrets should only live on client machines, reducing the attack surface as compared to having secrets accessible to a server accessible to the world over HTTP.
+
+When Paranoid performs the data overlay by attaching a shadow root, it is also possible to leak side-channel information about the encapsulated data that external JavaScript can read. Heiderich et al. \cite{Heiderich:2012:SAS:2382196.2382276} demonstrates a possibility to reliably extract the characters in a string by using custom fonts. Since shadow DOMs inherit CSS styles from its parent, this attack is reasonably easy to exploit by a malicious web service.
+
+It may be possible to mitigate such an attack vector by blacklisting specific CSS properties in the shadow root which might lead to side channel leakage. For example, we could potentially disable all inherited styles in the shadow root like described in Figure \ref{fig:reset_shadow_inherit}.
+
+\begin{figure}
+    \begin{lstlisting}
+    const shadow = span.attachShadow({
+      mode: "closed"
+    });
+    shadow.innerHTML = `<style>
+      :host {
+        all: initial;
+      }
+    </style>`;
+    \end{lstlisting}
+    \captionof{figure}{Adding an explicit \texttt{all: initial} property would reset all inherited styles from the host element.}
+    \label{fig:reset_shadow_inherit}
+\end{figure}
+
 \section{Implementation}
 
 Taking into consideration meeting the security goals as outlined, as well as making the user experience for Paranoid as seamless as possible, we designed Paranoid to be packaged as a Chromium extension, which depends on a daemon server, which we wrote in Python.
@@ -291,7 +314,7 @@ Private data overlay is achieved by attaching a shadow root using content script
     \end{lstlisting}
 \end{center}
 
-The script would run once the page has completed loading, after the DOM tree has been fully parsed.
+The script would run on the context of all URLs. Once the page has completed loading, after the DOM tree has been fully parsed, all \texttt{<paranoid>} tags will be inspected and relevant shadow roots will be attached accordingly.
 
 Finally, the extension also provides a user interface. The interface allows for users to change settings, change private data for specific fields as well as share or revoke access to the private data with other users completely within the browser. This was designed with the user in mind, since it would be infeasible to ask the user to maintain a bunch of JSON files on their own. Figure \ref{fig:settings} provides an example screenshot.
 
@@ -318,7 +341,7 @@ As such, a caching mechanism became a necessity and we managed to improve the re
 
 As part of our testing efforts, we created a simple sample Paranoid web service that deploys the Paranoid SSO and displays a placard for each user registered. Each placard contains Paranoid placeholders for users' first name, email and bio. The service also hosts a field map in JSON format (Figure \ref{fig:paranoid_map}) that contains all the field names required by the service. This JSON file is consumed during the SSO process such that the daemon can create the relevant field entries. Subsequently, users can use the user interface to change the default field entry values.
 
-\begin{center}
+\begin{figure}
     \begin{lstlisting}
 {
     "placeholders": ["first_name", "last_name", "email", "image", "bio"],
@@ -327,7 +350,7 @@ As part of our testing efforts, we created a simple sample Paranoid web service 
     \end{lstlisting}
     \captionof{figure}{Example field map, accessible at \texttt{origin.com/paranoid\_map} on the web service.}
     \label{fig:paranoid_map}
-\end{center}
+\end{figure}
 
 \section{Evaluation}
 
@@ -357,9 +380,21 @@ After the initial page load and data overlay process, our implementation would f
 
 Our implementation also cannot handle non-HTML data overlays. This might include private data placeholders that are supposed to be replaced in non-HTML elements, such as browser alerts, console messages, or URL parameters. Since we are relying extensively on the shadow DOM API to provide isolation from the untrusted web service, Paranoid does not provide a mechanism to support these use cases should they arise in a web service.
 
+Our design also necessitates the web service, which we do not trust, to follow a certain API in terms of supporting SSO and data overlays. This might slow down adoption of Paranoid by the public since it would explicitly require services to opt-in. However, we believe that the simple integration requirements on the part of the service, coupled with increasing pressure from the public for organizations to provide better data protection of personal data, would allow for Paranoid's design to be easily adopted by services in the near future.
+
 \section{Related Work}
 
-% TODO
+Various work has been done to design a system that allows for user-to-user encryption atop untrusted web services in the past. Notably, we discovered (rather late in our project) that there has been quite a number of attempts in designing such systems using shadow DOMs specifically, including others who have openly found vulnerabilities with their approach. We will discuss these past works, how Paranoid compares with them (including how it fares in terms of previous security concerns raised), as well as how other solutions might work better.
+
+Mylar \cite{Popa:2014:BWA:2616448.2616464} explores this problem in a similar but opposite approach; it introduces a platform for designing web services to be resistant against data confidentiality attacks at various levels. Mylar explores an approach where all user data is stored encrypted in the remote server, and only decrypted in the browser since keys are only stored locally on the client. This is similar to the approach that Paranoid has taken to store private data on a separate data plane from application code.
+
+We also discovered previous work by He et al. \cite{He:2014:SEW:2660267.2660326} on ShadowCrypt (2014), which is very similar in concept to Paranoid. ShadowCrypt relies on the Shadow DOM v0 specification, together with explicit patching of the several attributes and methods (\texttt{Element.shadowRoot}, \texttt{Element.olderShadowRoot}, \texttt{Element.getDistributedNodes()}), to encapsulate plaintext private user data in the DOM, much like what Paranoid does. In addition, ShadowCrypt attaches shadow roots to input fields, providing an encapsulated input field for the user to enter their information, which should be isolated from the main web page's JavaScript code.
+
+Recent work by Freyberger et al. \cite{Freyberger2018} also demonstrates several attacks against ShadowCrypt. The most severe exploit is a user interface attack, which directly fools the user into thinking they are entering private data into an encrypted field encapsulated with ShadowCrypt; however malicious third-party JavaScript and CSS could be used to mimic the appearance of a ``secure'' input field used in ShadowCrypt. Paranoid does not suffer from this security problem, since all user data is entered on the extension's settings page, which cannot be compromised remotely by a third-party web service since all code is client-side.
+
+Freyberger et al. also discusses the fragility of relying on the Shadow DOM API for isolation, which was at version 0 when implemented in ShadowCrypt; it is currently at version 1 with a completely different API. Because of frequent changes to the unstable web specification, ShadowCrypt remained vulnerable to new features that were released by Chrome, including newer CSS selectors like \texttt{::shadow} and \texttt{body /deep/ span} which allowed untrusted JavaScript to cross the shadow boundary. On the other hand, Paranoid remains unfettered against these exploits, presumably because of the new \texttt{closed} mode which was added in the version 1 specification of the shadow DOM.
+
+However, we never know if Paranoid would be able to stand against the test of time, since what happened to ShadowCrypt could very well happen to Paranoid as well. Freyberger et al. brings up a very good point that until a fundamental browser primitive is designed for such a purpose, systems like ShadowCrypt and Paranoid may always remain fragile and at risk of data exposure by relying on non-standard functionality for the purposes of security.
 
 \section{Conclusions}
 
