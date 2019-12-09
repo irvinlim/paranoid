@@ -178,12 +178,11 @@ class ParanoidManager():
         data, cache_hit = self.cache.get_service_uids(origin)
         if not cache_hit:
             # Check if origin exists
-            path = self.get_service_path(origin)
+            path = self.get_service_path(origin, 'uids')
             if not self.keybase.exists(path):
                 return []
 
             # Get identities
-            path = self.get_service_path(origin, 'uids')
             data = [uid[:-5] for uid in self.keybase.list_dir(path, '*.json')]
 
             # Update cache
