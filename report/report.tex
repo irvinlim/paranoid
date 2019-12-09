@@ -315,9 +315,20 @@ As such, a caching mechanism became a necessity and we managed to improve the re
 
 \subsubsection{Sample Paranoid-compliant web service}
 
-As part of our testing efforts, we created a simple sample Paranoid web service that deploys the Paranoid SSO and displays a placard for each user registered. Each placard contains Paranoid placeholders for users' first name, email and bio.
+As part of our testing efforts, we created a simple sample Paranoid web service that deploys the Paranoid SSO and displays a placard for each user registered. Each placard contains Paranoid placeholders for users' first name, email and bio. The service also hosts a field map in JSON format (Figure \ref{fig:paranoid_map} ) that contains all the field names required by the service. This JSON file is consumed during the SSO process such that the daemon can create the relevant field entries. Subsequently, users can use the user interface to change the default field entry values.
 
-In addition, an 'evil' page (accessible via /evil) is created to simulate a  malicious service attempting to siphon user's private data. The evil service would periodically send a copy of the entire DOM to a malicious endpoint.
+\begin{center}
+    \begin{lstlisting}
+        {
+            "placeholders": ["first_name", "last_name", "email", "image", "bio"],
+            "last_updated": 1574027849888
+        }
+    \end{lstlisting}
+    \captionof{figure}{Example field map, accessible through domain.com/paranoid_map path.}
+    \label{fig:paranoid_map}
+\end{center}
+
+In addition, an 'evil' page (accessible via domain.com/evil) is created to simulate a  malicious service attempting to siphon user's private data. The evil service would periodically send a copy of the entire DOM to a malicious endpoint.
 
 Moreover, manual hijacking scripts are also attempted via the browser's developer console. Some attempted techniques include, overriding the attachShadow method, referencing the shadow DOM within the content script, overriding variables within the content scripts and injecting scripts within the paranoid html tag to carry out XSS attacks.
 
