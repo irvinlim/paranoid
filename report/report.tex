@@ -174,6 +174,10 @@ To get around this, we execute the JavaScript code that calls \texttt{Element.pr
 
 As such, any changes to the JavaScript environment in the web page would not affect the JavaScript environment within the content script of our browser extension, hence making it immune from \texttt{attachShadow} overloading attacks. Additionally, because of this, the browser extension must be written for a Chromium browser, in order to support the execution of content scripts in isolation from the untrusted web page's JavaScript code.
 
+While this might not be the best approach to secure private data in the same DOM as untrusted JavaScript code, we were unable to find any exploits that can bypass the shadow boundary in our case when using shadow DOM in conjunction with content scripts. Since shadow DOMs were not developed with security in mind, such an approach may not be secure in the long run as browser capabilities and web specifications change over time.
+
+We hope that browsers and web standards committees may one day design an idiomatic approach to isolate content within a DOM from external JavaScript with security in mind. A case in point would be this discussion on the W3C's GitHub issue tracker, which discusses the use case of the \texttt{closed} mode shadow root in the context of security \cite{GitHubW3C}.
+
 \subsection{Keybase-backed private data storage}
 
 We chose to use Keybase \cite{Keybase} as our storage and transport mechanism as it already provides both authenticity and confidentiality guarantees out of the box, as well as other neat features like filesystem abstractions (KBFS) \cite{KBFS} and an end-to-end encrypted message passing mechanism (Keybase Chat) \cite{KeybaseChat}.
