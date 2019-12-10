@@ -1,7 +1,7 @@
 body {
     background-color: #f5f5f5;
     font-family: system-ui, sans-serif;
-    font-size: 75%
+    font-size: 75%;
 }
 
 img.img-center {
@@ -58,6 +58,20 @@ h1 {
     border-radius: 50%;
 }
 
+.alert {
+    position: relative;
+    padding: .75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+}
+
+.alert.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
 .loader {
     font-size: 10px;
     margin: 1px auto;
@@ -66,19 +80,20 @@ h1 {
     height: 25px;
     border-radius: 50%;
     background: #000000;
-    background: -moz-linear-gradient(left, #000000 10%, rgba(0,0,0, 0) 42%);
-    background: -webkit-linear-gradient(left, #000000 10%, rgba(0,0,0, 0) 42%);
-    background: -o-linear-gradient(left, #000000 10%, rgba(0,0,0, 0) 42%);
-    background: -ms-linear-gradient(left, #000000 10%, rgba(0,0,0, 0) 42%);
-    background: linear-gradient(to right, #000000 10%, rgba(0,0,0, 0) 42%);
+    background: -moz-linear-gradient(left, #000000 10%, rgba(0, 0, 0, 0) 42%);
+    background: -webkit-linear-gradient(left, #000000 10%, rgba(0, 0, 0, 0) 42%);
+    background: -o-linear-gradient(left, #000000 10%, rgba(0, 0, 0, 0) 42%);
+    background: -ms-linear-gradient(left, #000000 10%, rgba(0, 0, 0, 0) 42%);
+    background: linear-gradient(to right, #000000 10%, rgba(0, 0, 0, 0) 42%);
     position: relative;
     -webkit-animation: load3 1.4s infinite linear;
     animation: load3 1.4s infinite linear;
     -webkit-transform: translateZ(0);
     -ms-transform: translateZ(0);
     transform: translateZ(0);
-  }
-  .loader:before {
+}
+
+.loader:before {
     width: 50%;
     height: 50%;
     background: #000000;
@@ -87,8 +102,9 @@ h1 {
     top: 0;
     left: 0;
     content: '';
-  }
-  .loader:after {
+}
+
+.loader:after {
     background: limegreen;
     width: 75%;
     height: 75%;
@@ -100,26 +116,28 @@ h1 {
     left: 0;
     bottom: 0;
     right: 0;
-  }
-  @-webkit-keyframes load3 {
+}
+
+@-webkit-keyframes load3 {
     0% {
-      -webkit-transform: rotate(0deg);
-      transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
     }
+
     100% {
-      -webkit-transform: rotate(360deg);
-      transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
     }
-  }
-  @keyframes load3 {
+}
+
+@keyframes load3 {
     0% {
-      -webkit-transform: rotate(0deg);
-      transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
     }
+
     100% {
-      -webkit-transform: rotate(360deg);
-      transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
     }
-  }
-  
-  
+}

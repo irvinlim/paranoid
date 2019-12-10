@@ -17,11 +17,18 @@ const setText = text => el => {
 };
 
 async function approve(origin, uid, field_name, username) {
-  // Add to foreign map.
-  await ParanoidStorage.addServiceForeignMap(origin, uid, field_name, username);
+  document.querySelector('#confirm-error-container').style.display = 'none';
 
-  // Close the window.
-  window.close();
+  try {
+    // Add to foreign map.
+    await ParanoidStorage.addServiceForeignMap(origin, uid, field_name, username);
+
+    // Close the window.
+    window.close();
+  } catch (e) {
+    document.querySelector('#confirm-error-container').style.display = 'block';
+    document.querySelector('.btn.approve').style.display = 'none';
+  }
 }
 
 function deny() {
@@ -40,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.querySelectorAll('.uid').forEach(setText(uid));
   document.querySelectorAll('.field_name').forEach(setText(field_name));
   document.querySelectorAll('.username').forEach(setText(username));
+  document.querySelector('#confirm-error-container').style.display = 'none';
 
   // Add Keybase profile link.
   document.querySelector('.username-link').setAttribute('href', getKeybaseProfile(username));
@@ -50,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Register button handlers
   document.querySelector('button.approve').addEventListener('click', async function() {
-    var buttons = document.getElementsByClassName("btn");
+    const buttons = document.getElementsByClassName('btn');
     buttons[0].disabled = true;
     buttons[0].innerHTML = '<div class="loader">Processing...</div>';
     buttons[1].disabled = true;
