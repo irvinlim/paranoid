@@ -315,7 +315,7 @@ class ParanoidManager():
                 continue
 
             if map_username == username and map_uid == uid and map_field_name == field_name:
-                raise ParanoidException('Mapping already exists for ({}, {}, {})'.format(uid, field_name, username))
+                raise ParanoidException('Mapping already exists for ({}, {}, {}) for user "{}"'.format(origin, uid, field_name, username))
 
             new_map.append({
                 'username': map_username,

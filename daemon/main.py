@@ -96,7 +96,7 @@ def add_foreign_map(origin, uid, field_name, username):
     return JsonResponse()
 
 
-@app.route('/services/<origin>/foreign_map', methods=['DELETE'])
+@app.route('/services/<origin>/foreign_map/<uid>/<field_name>/<username>', methods=['DELETE'])
 def remove_foreign_map(origin, uid, field_name, username):
     "Deletes a foreign map mapping for an origin."
 
@@ -379,8 +379,6 @@ def main(port, ssl_cert, ssl_privkey, base_path, token_file, disable_auth, disab
         # Prefetch in a background thread
         prefetcher = Thread(target=prefetch)
         prefetcher.start()
-
-    
 
     # Start Flask server
     app.run(host='127.0.0.1', port=port, ssl_context=ssl_context)
