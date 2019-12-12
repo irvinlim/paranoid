@@ -395,6 +395,8 @@ class ParanoidManager():
 
             # Attempt to decrypt the data file
             data = self.keybase.decrypt(data_path)
+            if data is None:
+                return None
 
             # Update cache
             self.cache.encrypt_data_file(origin, uid, field_name, data)
