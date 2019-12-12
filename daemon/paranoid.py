@@ -263,8 +263,6 @@ class ParanoidManager():
         # Update cache
         self.cache.set_foreign_map(origin, foreign_map)
 
-        return res
-
     def resolve_foreign_map(self, origin) -> List[Dict[str, str]]:
         "Returns a list of resolved foreign mappings for a given origin."
 
@@ -314,8 +312,9 @@ class ParanoidManager():
             if not map_username or not map_uid or not map_field_name:
                 continue
 
+            # Bail early if mapping already exists, nothing to do
             if map_username == username and map_uid == uid and map_field_name == field_name:
-                raise ParanoidException('Mapping already exists for ({}, {}, {}) for user "{}"'.format(origin, uid, field_name, username))
+                return
 
             new_map.append({
                 'username': map_username,
@@ -331,7 +330,7 @@ class ParanoidManager():
         })
 
         # Write the mapping to file
-        return self.set_foreign_map(origin, new_map)
+        self.set_foreign_map(origin, new_map)
 
     def remove_foreign_map(self, origin, uid, field_name, username):
         "Removes a new foreign map for a given origin."
